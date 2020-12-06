@@ -18,7 +18,8 @@ agentDecl = { "agent" ~
             }
 agentBlock = {
                 BLOCK_BEGIN ~
-                k8sAgent ~
+                (k8sAgent
+                | dockerAgent) ~
                 BLOCK_END
              }
 k8sAgent = { "kubernetes" ~
@@ -26,6 +27,13 @@ k8sAgent = { "kubernetes" ~
              ("defaultContainer" ~ STR)? ~
              ("yaml" ~ STR)? ~
              ("yamlFile" ~ STR)? ~
+             BLOCK_END
+           }
+dockerAgent = { "docker" ~
+             BLOCK_BEGIN ~
+             ("image" ~ STR)? ~
+             ("label" ~ STR)? ~
+             ("args" ~ STR)? ~
              BLOCK_END
            }
 
