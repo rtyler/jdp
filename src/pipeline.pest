@@ -13,6 +13,7 @@ pipeline = _{ SOI ~ "pipeline" ~
 
 agentDecl = { "agent" ~
               ("any"
+              | "none"
               | agentBlock)
             }
 agentBlock = {
@@ -59,6 +60,7 @@ stagesDecl = { "stages" ~
 
 stage = { "stage(" ~ STR ~ ")" ~
             BLOCK_BEGIN ~
+            agentDecl? ~
             environmentDecl? ~
             stepsDecl ~
             BLOCK_END
