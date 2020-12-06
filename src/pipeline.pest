@@ -19,7 +19,9 @@ agentDecl = { "agent" ~
 agentBlock = {
                 BLOCK_BEGIN ~
                 (k8sAgent
-                | dockerAgent) ~
+                | dockerAgent
+                | dockerfileAgent
+                | nodeAgent) ~
                 BLOCK_END
              }
 k8sAgent = { "kubernetes" ~
@@ -31,9 +33,30 @@ k8sAgent = { "kubernetes" ~
            }
 dockerAgent = { "docker" ~
              BLOCK_BEGIN ~
+             ("reuseNode" ~ BOOL)? ~
              ("image" ~ STR)? ~
              ("label" ~ STR)? ~
              ("args" ~ STR)? ~
+             ("registryUrl" ~ STR)? ~
+             ("registryCredentialsId" ~ STR)? ~
+             ("customWorkspace" ~ STR)? ~
+             BLOCK_END
+           }
+dockerfileAgent = { "dockerfile" ~
+             BLOCK_BEGIN ~
+             ("reuseNode" ~ BOOL)? ~
+             ("filename" ~ STR)? ~
+             ("dir" ~ STR)? ~
+             ("label" ~ STR)? ~
+             ("additionalBuildArgs" ~ STR)? ~
+             ("args" ~ STR)? ~
+             ("customWorkspace" ~ STR)? ~
+             BLOCK_END
+           }
+nodeAgent = { "node" ~
+             BLOCK_BEGIN ~
+             ("label" ~ STR)? ~
+             ("customWorkspace" ~ STR)? ~
              BLOCK_END
            }
 
@@ -97,6 +120,9 @@ BLOCK_END = @{ "}" }
 STR = { "'" ~ STRV ~ "'" }
 STRV = @{ "''" | (!"'" ~ ANY)* }
 COMMA = @{ "," }
+BOOL = @{ (TRUE | FALSE) }
+TRUE = { "true" }
+FALSE = { "false" }
 
 WHITESPACE = _{ (" " | NEWLINE) }
 COMMENT = _{ "//" ~ (!NEWLINE ~ ANY)* }

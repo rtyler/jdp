@@ -1,0 +1,14 @@
+pipeline {
+    agent {
+        node {
+            label 'foo'
+            customWorkspace '/tmp'
+        }
+    }
+
+    stages {
+        stage('Build') {
+            steps { sh 'make' }
+        }
+    }
+}
