@@ -1,0 +1,14 @@
+// from: https://www.jenkins.io/doc/book/pipeline/jenkinsfile/#handling-credentials
+pipeline {
+    environment {
+        AWS_ACCESS_KEY_ID     = credentials('jenkins-aws-secret-key-id')
+        AWS_SECRET_ACCESS_KEY = credentials('jenkins-aws-secret-access-key')
+    }
+    stages {
+        stage('Example stage 1') {
+            steps {
+                sh 'make'
+            }
+        }
+    }
+}

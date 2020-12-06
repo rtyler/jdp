@@ -15,9 +15,17 @@ agentDecl = { "agent" ~ "any" }
 
 environmentDecl = { "environment" ~
                     BLOCK_BEGIN ~
-                    (property)* ~
+                    (envProperty)* ~
                     BLOCK_END
                   }
+envProperty = {
+                property
+                | credentialProperty
+              }
+credentialProperty = { IDENT ~
+                        "=" ~
+                        "credentials(" ~ STR ~ ")"
+                      }
 
 
 optionsDecl = { "options" ~
