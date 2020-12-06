@@ -11,7 +11,23 @@ pipeline = _{ SOI ~ "pipeline" ~
                     BLOCK_END ~ EOI }
 
 
-agentDecl = { "agent" ~ "any" }
+agentDecl = { "agent" ~
+              ("any"
+              | agentBlock)
+            }
+agentBlock = {
+                BLOCK_BEGIN ~
+                k8sAgent ~
+                BLOCK_END
+             }
+k8sAgent = { "kubernetes" ~
+             BLOCK_BEGIN ~
+             ("defaultContainer" ~ STR)? ~
+             ("yaml" ~ STR)? ~
+             ("yamlFile" ~ STR)? ~
+             BLOCK_END
+           }
+
 
 environmentDecl = { "environment" ~
                     BLOCK_BEGIN ~

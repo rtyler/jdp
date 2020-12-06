@@ -1,0 +1,16 @@
+pipeline {
+    agent {
+        kubernetes {
+            defaultContainer 'maven'
+            yamlFile 'deploy/containers.yml'
+        }
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                sh 'make'
+            }
+        }
+    }
+}
