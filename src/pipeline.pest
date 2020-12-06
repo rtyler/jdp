@@ -5,16 +5,25 @@
 pipeline = _{ SOI ~ "pipeline" ~
                     BLOCK_BEGIN ~
                     agentDecl? ~
+                    optionsDecl? ~
                     stagesDecl ~
                     BLOCK_END ~ EOI }
 
 
 agentDecl = { "agent" ~ "any" }
+
+optionsDecl = { "options" ~
+                BLOCK_BEGIN ~
+                (optionFunc)* ~
+                BLOCK_END
+              }
+optionFunc = { IDENT ~ "()" }
+
 stagesDecl = { "stages" ~
                 BLOCK_BEGIN ~
                 (stage)+ ~
                 BLOCK_END
-                }
+              }
 
 stage = { "stage(" ~ STR ~ ")" ~
             BLOCK_BEGIN ~
@@ -25,7 +34,8 @@ stage = { "stage(" ~ STR ~ ")" ~
 stepsDecl = { "steps" ~
             BLOCK_BEGIN ~
             (step)+ ~
-            BLOCK_END }
+            BLOCK_END
+            }
 
 step = { IDENT ~ (
                     args

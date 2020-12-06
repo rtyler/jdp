@@ -4,7 +4,19 @@ version = "0.1.0"
 authors = ["R. Tyler Croy <rtyler@brokenco.de>"]
 edition = "2018"
 
+
+[lib]
+name = "jdp"
+source = "src/lib.rs"
+
+[[bin]]
+name = "jdp"
+source = "src/main.rs"
+
 [dependencies]
 log = "~0.4.11"
 pest = "~2.1.3"
 pest_derive = "~2.1.0"
+
+[dev-dependencies]
+glob = "0.3"
