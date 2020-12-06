@@ -1,0 +1,3 @@
+= Jenkins Declarative Parser
+
+This repository contains an grammar and parser for the link:https://www.jenkins.io/doc/book/pipeline/#declarative-pipeline-fundamentals[Jenkins Declarative Pipeline] syntax. It's for educational and testing purposes :)
