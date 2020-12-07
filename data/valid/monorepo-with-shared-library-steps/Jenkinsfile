@@ -1,4 +1,3 @@
-#!/usr/bin/env groovy
 // from: https://raw.githubusercontent.com/elastic/beats/7.8/Jenkinsfile
 
 @Library('apm@current') _
