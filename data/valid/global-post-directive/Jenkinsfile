@@ -1,0 +1,43 @@
+pipeline {
+    agent any 
+    stages {
+        stage('Build') { 
+            steps {
+                sh 'make'
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'always'
+        }
+        changed {
+            echo 'be'
+        }
+        fixed {
+            echo 'closing'
+        }
+        regression {
+            echo 'unless'
+        }
+        aborted {
+            echo 'of course'
+        }
+        failure {
+            echo 'it is not'
+        }
+        success {
+            echo 'closing'
+        }
+        unstable {
+            echo 'time'
+        }
+        unsuccessful {
+            echo 'then these'
+        }
+        cleanup {
+            echo 'must remain open'
+        }
+    }
+}

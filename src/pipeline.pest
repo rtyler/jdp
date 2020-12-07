@@ -8,6 +8,7 @@ pipeline = _{ SOI ~ "pipeline" ~
                     optionsDecl? ~
                     environmentDecl? ~
                     stagesDecl ~
+                    postDecl? ~
                     BLOCK_END ~ EOI }
 
 
@@ -75,6 +76,13 @@ credentialProperty = { IDENT ~
                         "credentials(" ~ STR ~ ")"
                       }
 
+inputDecl = { "input" ~
+              BLOCK_BEGIN ~
+             ("message" ~ STR)? ~
+             ("submitter" ~ STR)? ~
+              BLOCK_END
+            }
+
 
 optionsDecl = { "options" ~
                 BLOCK_BEGIN ~
@@ -83,12 +91,24 @@ optionsDecl = { "options" ~
               }
 optionFunc = { IDENT ~ "()" }
 
-inputDecl = { "input" ~
-              BLOCK_BEGIN ~
-             ("message" ~ STR)? ~
-             ("submitter" ~ STR)? ~
-              BLOCK_END
-            }
+
+postDecl = { "post" ~
+             BLOCK_BEGIN ~
+             (postBlock+) ~
+             BLOCK_END
+           }
+postBlock = { 
+            ("always"
+            | "changed"
+            | "fixed"
+            | "regression"
+            | "aborted"
+            | "failure"
+            | "success"
+            | "unstable"
+            | "unsuccessful"
+            | "cleanup"
+            ) ~ BLOCK_BEGIN ~ (step)+ ~ BLOCK_END }
 
 stagesDecl = { "stages" ~
                 BLOCK_BEGIN ~
