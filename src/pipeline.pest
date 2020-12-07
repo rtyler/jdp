@@ -153,5 +153,7 @@ BOOL = @{ (TRUE | FALSE) }
 TRUE = { "true" }
 FALSE = { "false" }
 
+
 WHITESPACE = _{ (" " | NEWLINE) }
-COMMENT = _{ "//" ~ (!NEWLINE ~ ANY)* }
+block_comment = _{ "/*" ~ (block_comment | !"*/" ~ ANY)* ~ "*/" }
+COMMENT    = _{ block_comment | ("//" ~ (!NEWLINE~ ANY)*) }
