@@ -122,6 +122,7 @@ stage = { "stage(" ~ STR ~ ")" ~
             environmentDecl? ~
             inputDecl? ~
             stepsDecl ~
+            postDecl? ~
             BLOCK_END
         }
 
