@@ -5,18 +5,6 @@ use jdp::*;
 use glob::glob;
 use std::path::PathBuf;
 
-fn parse_file(path: &PathBuf) -> Result<(), pest::error::Error<Rule>> {
-    use std::fs::File;
-    use std::io::Read;
-
-    let mut file = File::open(path).expect(&format!("Failed to open {:?}", path));
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)
-        .expect("Failed to read file into string");
-
-    parse_pipeline_string(&contents)
-}
-
 fn test_glob(pattern: &str, can_parse: bool) {
     for entry in glob(pattern).expect("Failed to read glob pattern") {
         match entry {
