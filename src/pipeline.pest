@@ -111,7 +111,7 @@ step = { IDENT ~ (
 
 args = { (STR ~ COMMA?)+ }
 kwargs = _{ (kwarg ~ COMMA?)+ }
-kwarg = { IDENT~ ":" ~ STR }
+kwarg = { IDENT~ ":" ~ (STR | BOOL) }
 property = { IDENT ~ "=" ~ STR }
 
 IDENT = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }

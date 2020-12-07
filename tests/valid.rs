@@ -21,7 +21,6 @@ fn test_glob(pattern: &str, can_parse: bool) {
     for entry in glob(pattern).expect("Failed to read glob pattern") {
         match entry {
             Ok(path) => {
-                println!("{:?}", path.display());
                 match path.file_name() {
                     Some(name) => {
                         if name == "Jenkinsfile" {
