@@ -1,0 +1,13 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Build') {
+            input {
+                message 'Yolo this to production?'
+                submitter 'rtyler'
+            }
+            steps { sh 'make' }
+        }
+    }
+}

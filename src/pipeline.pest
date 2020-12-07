@@ -83,6 +83,13 @@ optionsDecl = { "options" ~
               }
 optionFunc = { IDENT ~ "()" }
 
+inputDecl = { "input" ~
+              BLOCK_BEGIN ~
+             ("message" ~ STR)? ~
+             ("submitter" ~ STR)? ~
+              BLOCK_END
+            }
+
 stagesDecl = { "stages" ~
                 BLOCK_BEGIN ~
                 (stage)+ ~
@@ -93,6 +100,7 @@ stage = { "stage(" ~ STR ~ ")" ~
             BLOCK_BEGIN ~
             agentDecl? ~
             environmentDecl? ~
+            inputDecl? ~
             stepsDecl ~
             BLOCK_END
         }
