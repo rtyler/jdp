@@ -23,13 +23,29 @@ pub fn parse_file(path: &PathBuf) -> Result<(), pest::error::Error<Rule>> {
 }
 
 pub fn parse_pipeline_string(buffer: &str) -> Result<(), PestError<Rule>> {
-    let parser = PipelineParser::parse(Rule::pipeline, buffer)?;
+    let _parser = PipelineParser::parse(Rule::pipeline, buffer)?;
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parse_string_single() {
+        let _str = PipelineParser::parse(
+            Rule::string,
+            r#"'hello world'"#)
+            .unwrap().next().unwrap();
+    }
+
+    #[test]
+    fn parse_string_double() {
+        let _str = PipelineParser::parse(
+            Rule::string,
+            r#""hello world""#)
+            .unwrap().next().unwrap();
+    }
 
     #[test]
     fn simple_validation() {

@@ -2,15 +2,32 @@
 // This PEG file strives to capture as much of the declarative
 // pipeline syntax as possible
 //
-pipeline = _{ SOI ~ "pipeline" ~
+pipeline = _{ SOI ~ shebang? ~
+                    "pipeline" ~
                     BLOCK_BEGIN ~
-                    agentDecl? ~
-                    optionsDecl? ~
-                    environmentDecl? ~
-                    stagesDecl ~
-                    postDecl? ~
-                    BLOCK_END ~ EOI }
+                    // I am pretty sure this grammar is wrong and there has to
+                    // a better way to allow these declarations anywhere within
+                    // the block, but still only allow one of each
+                    (
+                    agentDecl
+                    | environmentDecl
+                    | optionsDecl
+                    | postDecl
+                    | toolsDecl
+                    | stagesDecl{1}
+                    )*
+                    ~
+                    BLOCK_END ~
+                    EOI }
 
+// XXX: Why won't this work!
+//shebang = _{ "#!" ~ (!NEWLINE ~ ANY)* }
+shebang = _{ "#!groovy" }
+// Garbage is any Groovy defined outside of the pipeline block, basically
+// making a mockery of Declarative pipeline :)
+garbage = {
+            "@" ~ (!NEWLINE ~ ANY)*
+          }
 
 agentDecl = { "agent" ~
               ("any"
@@ -22,42 +39,43 @@ agentBlock = {
                 (k8sAgent
                 | dockerAgent
                 | dockerfileAgent
-                | nodeAgent) ~
+                | nodeAgent
+                | ("label" ~ string)) ~
                 BLOCK_END
              }
 k8sAgent = { "kubernetes" ~
              BLOCK_BEGIN ~
-             ("defaultContainer" ~ STR)? ~
-             ("yaml" ~ STR)? ~
-             ("yamlFile" ~ STR)? ~
+             ("defaultContainer" ~ string)? ~
+             ("yaml" ~ string)? ~
+             ("yamlFile" ~ string)? ~
              BLOCK_END
            }
 dockerAgent = { "docker" ~
              BLOCK_BEGIN ~
              ("reuseNode" ~ BOOL)? ~
-             ("image" ~ STR)? ~
-             ("label" ~ STR)? ~
-             ("args" ~ STR)? ~
-             ("registryUrl" ~ STR)? ~
-             ("registryCredentialsId" ~ STR)? ~
-             ("customWorkspace" ~ STR)? ~
+             ("image" ~ string)? ~
+             ("label" ~ string)? ~
+             ("args" ~ string)? ~
+             ("registryUrl" ~ string)? ~
+             ("registryCredentialsId" ~ string)? ~
+             ("customWorkspace" ~ string)? ~
              BLOCK_END
            }
 dockerfileAgent = { "dockerfile" ~
              BLOCK_BEGIN ~
              ("reuseNode" ~ BOOL)? ~
-             ("filename" ~ STR)? ~
-             ("dir" ~ STR)? ~
-             ("label" ~ STR)? ~
-             ("additionalBuildArgs" ~ STR)? ~
-             ("args" ~ STR)? ~
-             ("customWorkspace" ~ STR)? ~
+             ("filename" ~ string)? ~
+             ("dir" ~ string)? ~
+             ("label" ~ string)? ~
+             ("additionalBuildArgs" ~ string)? ~
+             ("args" ~ string)? ~
+             ("customWorkspace" ~ string)? ~
              BLOCK_END
            }
 nodeAgent = { "node" ~
              BLOCK_BEGIN ~
-             ("label" ~ STR)? ~
-             ("customWorkspace" ~ STR)? ~
+             ("label" ~ string)? ~
+             ("customWorkspace" ~ string)? ~
              BLOCK_END
            }
 
@@ -73,13 +91,13 @@ envProperty = {
               }
 credentialProperty = { IDENT ~
                         "=" ~
-                        "credentials(" ~ STR ~ ")"
+                        "credentials(" ~ string ~ ")"
                       }
 
 inputDecl = { "input" ~
               BLOCK_BEGIN ~
-             ("message" ~ STR)? ~
-             ("submitter" ~ STR)? ~
+             ("message" ~ string)? ~
+             ("submitter" ~ string)? ~
               BLOCK_END
             }
 
@@ -89,7 +107,7 @@ optionsDecl = { "options" ~
                 (optionFunc)* ~
                 BLOCK_END
               }
-optionFunc = { IDENT ~ "()" }
+optionFunc = { IDENT ~ "(" ~ args? ~ ")" }
 
 
 postDecl = { "post" ~
@@ -116,11 +134,12 @@ stagesDecl = { "stages" ~
                 BLOCK_END
               }
 
-stage = { "stage(" ~ STR ~ ")" ~
+stage = { "stage(" ~ string ~ ")" ~
             BLOCK_BEGIN ~
             agentDecl? ~
             environmentDecl? ~
             inputDecl? ~
+            toolsDecl? ~
             stepsDecl ~
             postDecl? ~
             BLOCK_END
@@ -131,29 +150,55 @@ stepsDecl = { "steps" ~
             (step)+ ~
             BLOCK_END
             }
-
 step = { IDENT ~ (
                     args
                     | kwargs
                     )
         }
-
-args = { (STR ~ COMMA?)+ }
+args = { ((string | BOOL) ~ COMMA?)+ }
 kwargs = _{ (kwarg ~ COMMA?)+ }
-kwarg = { IDENT~ ":" ~ (STR | BOOL) }
-property = { IDENT ~ "=" ~ STR }
+kwarg = { IDENT~ ":" ~ (string | BOOL) }
+property = { IDENT ~ "=" ~ string }
+
+
+toolsDecl = { "tools" ~
+              BLOCK_BEGIN ~
+              (IDENT ~ string)* ~
+              BLOCK_END
+            }
 
 IDENT = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
 BLOCK_BEGIN = @{ "{" }
 BLOCK_END = @{ "}" }
-STR = { "'" ~ STRV ~ "'" }
-STRV = @{ "''" | (!"'" ~ ANY)* }
+
+string        = ${ (single_quoted | double_quoted) }
+single_quoted = ${ single_quote ~ inner_single_str ~ single_quote }
+double_quoted = ${ quote ~ inner_double_str ~ quote }
+
+inner_single_str = @{ (!("'" | "\\") ~ ANY)* ~ (escape ~ inner_single_str)? }
+inner_double_str = @{ (!("\"" | "\\") ~ ANY)* ~ (escape ~ inner_double_str)? }
+inner_chr = @{ escape | ANY }
+escape    = @{ "\\" ~ ("\"" | "\\" | "r" | "n" | "t" | "0" | "'" | code | unicode) }
+code      = @{ "x" ~ hex_digit{2} }
+unicode   = @{ "u" ~ opening_brace ~ hex_digit{2, 6} ~ closing_brace }
+hex_digit = @{ '0'..'9' | 'a'..'f' | 'A'..'F' }
+
+quote          = { "\"" }
+single_quote   = { "'" }
+
+assignment_operator = { "=" }
+opening_brace       = { "{" }
+closing_brace       = { "}" }
+opening_paren       = { "(" }
+closing_paren       = { ")" }
+opening_brack       = { "[" }
+closing_brack       = { "]" }
+
 COMMA = @{ "," }
 BOOL = @{ (TRUE | FALSE) }
 TRUE = { "true" }
 FALSE = { "false" }
 
-
-WHITESPACE = _{ (" " | NEWLINE) }
+WHITESPACE = _{ " " | "\t" | NEWLINE }
 block_comment = _{ "/*" ~ (block_comment | !"*/" ~ ANY)* ~ "*/" }
 COMMENT    = _{ block_comment | ("//" ~ (!NEWLINE~ ANY)*) }

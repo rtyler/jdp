@@ -51,6 +51,5 @@ fn main() {
                 println!("Looks valid! Great work!");
             }
         },
-        _ => {},
     }
 }

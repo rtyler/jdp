@@ -3,7 +3,6 @@
  */
 use jdp::*;
 use glob::glob;
-use std::path::PathBuf;
 
 fn test_glob(pattern: &str, can_parse: bool) {
     for entry in glob(pattern).expect("Failed to read glob pattern") {
