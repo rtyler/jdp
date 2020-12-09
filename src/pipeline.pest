@@ -4,7 +4,7 @@
 //
 pipeline = _{ SOI ~ shebang? ~
                     "pipeline" ~
-                    BLOCK_BEGIN ~
+                    opening_brace ~
                     // I am pretty sure this grammar is wrong and there has to
                     // a better way to allow these declarations anywhere within
                     // the block, but still only allow one of each
@@ -14,10 +14,11 @@ pipeline = _{ SOI ~ shebang? ~
                     | optionsDecl
                     | postDecl
                     | toolsDecl
+                    | triggersDecl
                     | stagesDecl{1}
                     )*
                     ~
-                    BLOCK_END ~
+                    closing_brace ~
                     EOI }
 
 // XXX: Why won't this work!
@@ -35,23 +36,23 @@ agentDecl = { "agent" ~
               | agentBlock)
             }
 agentBlock = {
-                BLOCK_BEGIN ~
+                opening_brace ~
                 (k8sAgent
                 | dockerAgent
                 | dockerfileAgent
                 | nodeAgent
                 | ("label" ~ string)) ~
-                BLOCK_END
+                closing_brace
              }
 k8sAgent = { "kubernetes" ~
-             BLOCK_BEGIN ~
+             opening_brace ~
              ("defaultContainer" ~ string)? ~
              ("yaml" ~ string)? ~
              ("yamlFile" ~ string)? ~
-             BLOCK_END
+             closing_brace
            }
 dockerAgent = { "docker" ~
-             BLOCK_BEGIN ~
+             opening_brace ~
              ("reuseNode" ~ BOOL)? ~
              ("image" ~ string)? ~
              ("label" ~ string)? ~
@@ -59,10 +60,10 @@ dockerAgent = { "docker" ~
              ("registryUrl" ~ string)? ~
              ("registryCredentialsId" ~ string)? ~
              ("customWorkspace" ~ string)? ~
-             BLOCK_END
+             closing_brace
            }
 dockerfileAgent = { "dockerfile" ~
-             BLOCK_BEGIN ~
+             opening_brace ~
              ("reuseNode" ~ BOOL)? ~
              ("filename" ~ string)? ~
              ("dir" ~ string)? ~
@@ -70,20 +71,20 @@ dockerfileAgent = { "dockerfile" ~
              ("additionalBuildArgs" ~ string)? ~
              ("args" ~ string)? ~
              ("customWorkspace" ~ string)? ~
-             BLOCK_END
+             closing_brace
            }
 nodeAgent = { "node" ~
-             BLOCK_BEGIN ~
+             opening_brace ~
              ("label" ~ string)? ~
              ("customWorkspace" ~ string)? ~
-             BLOCK_END
+             closing_brace
            }
 
 
 environmentDecl = { "environment" ~
-                    BLOCK_BEGIN ~
+                    opening_brace ~
                     (envProperty)* ~
-                    BLOCK_END
+                    closing_brace
                   }
 envProperty = {
                 property
@@ -94,26 +95,31 @@ credentialProperty = { IDENT ~
                         "credentials(" ~ string ~ ")"
                       }
 
+func = { IDENT ~ "(" ~ (func | kwargs | args)? ~ ")" }
+
 inputDecl = { "input" ~
-              BLOCK_BEGIN ~
+              opening_brace ~
              ("message" ~ string)? ~
              ("submitter" ~ string)? ~
-              BLOCK_END
+              closing_brace
             }
 
-
 optionsDecl = { "options" ~
-                BLOCK_BEGIN ~
-                (optionFunc)* ~
-                BLOCK_END
+                opening_brace ~
+                (func)* ~
+                closing_brace
               }
-optionFunc = { IDENT ~ "(" ~ args? ~ ")" }
 
+parallelDecl = { "parallel" ~
+                 opening_brace ~
+                 (stage)+ ~
+                 closing_brace
+               }
 
 postDecl = { "post" ~
-             BLOCK_BEGIN ~
+             opening_brace ~
              (postBlock+) ~
-             BLOCK_END
+             closing_brace
            }
 postBlock = { 
             ("always"
@@ -126,50 +132,74 @@ postBlock = {
             | "unstable"
             | "unsuccessful"
             | "cleanup"
-            ) ~ BLOCK_BEGIN ~ (step)+ ~ BLOCK_END }
+            ) ~ opening_brace ~ (step)+ ~ closing_brace }
 
 stagesDecl = { "stages" ~
-                BLOCK_BEGIN ~
+                opening_brace ~
                 (stage)+ ~
-                BLOCK_END
+                closing_brace
               }
 
 stage = { "stage(" ~ string ~ ")" ~
-            BLOCK_BEGIN ~
+            opening_brace ~
+            whenDecl? ~
             agentDecl? ~
             environmentDecl? ~
             inputDecl? ~
             toolsDecl? ~
-            stepsDecl ~
+            (stepsDecl | parallelDecl) ~
             postDecl? ~
-            BLOCK_END
+            closing_brace
         }
 
 stepsDecl = { "steps" ~
-            BLOCK_BEGIN ~
+            opening_brace ~
             (step)+ ~
-            BLOCK_END
+            closing_brace
             }
-step = { IDENT ~ (
-                    args
-                    | kwargs
-                    )
-        }
-args = { ((string | BOOL) ~ COMMA?)+ }
+
+
+step_args = _{ args | kwargs | array_kwargs }
+simple_step = _{ IDENT ~ step_args }
+// A block step is something like dir('foo') { } that accepts steps within it
+// in many cases these will have keyword arguments like withCredentials
+block_step = _{ IDENT ~
+                (opening_paren ~ step_args? ~ closing_paren)? ~
+                opening_brace ~
+                (step)+ ~
+                closing_brace
+              }
+step = { simple_step | block_step }
+
+arg = _{ string | BOOL | number }
+args = { (arg ~ COMMA?)+ }
 kwargs = _{ (kwarg ~ COMMA?)+ }
-kwarg = { IDENT~ ":" ~ (string | BOOL) }
+kwarg = { IDENT~ ":" ~ arg }
+
+// This syntax is some Groovy invocation magic that I'm not sure I fully
+// understand at the moment
+array_kwargs = _{ "[[" ~ kwargs ~ "]]" }
 property = { IDENT ~ "=" ~ string }
 
 
 toolsDecl = { "tools" ~
-              BLOCK_BEGIN ~
+              opening_brace ~
               (IDENT ~ string)* ~
-              BLOCK_END
+              closing_brace
             }
+triggersDecl = { "triggers" ~
+                opening_brace ~
+                (func)* ~
+                closing_brace
+              }
+whenDecl = { "when" ~
+                opening_brace ~
+                ("expression" ~ opening_brace ~ (!closing_brace ~ ANY)* ~ closing_brace) ~
+                closing_brace
+              }
 
-IDENT = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
-BLOCK_BEGIN = @{ "{" }
-BLOCK_END = @{ "}" }
+
+IDENT = @{ (ASCII_ALPHA | "$") ~ (ASCII_ALPHANUMERIC | "_")* }
 
 string        = ${ (single_quoted | double_quoted) }
 single_quoted = ${ single_quote ~ inner_single_str ~ single_quote }
@@ -193,6 +223,9 @@ opening_paren       = { "(" }
 closing_paren       = { ")" }
 opening_brack       = { "[" }
 closing_brack       = { "]" }
+
+number = @{ '0'..'9'+ }
+integer = @{ number | "-" ~ "0"* ~ '1'..'9' ~ number? }
 
 COMMA = @{ "," }
 BOOL = @{ (TRUE | FALSE) }

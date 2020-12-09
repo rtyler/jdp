@@ -68,4 +68,68 @@ pipeline {
         .next()
         .expect("Failed to iterate");
     }
+
+    #[test]
+    fn parse_no_options() {
+        let _options = PipelineParser::parse(
+            Rule::optionsDecl,
+            "options { }")
+            .unwrap().next().unwrap();
+    }
+
+    #[test]
+    fn parse_options_no_args() {
+        let _options = PipelineParser::parse(
+            Rule::optionsDecl,
+            "options { timestamps() }")
+            .unwrap().next().unwrap();
+    }
+
+    #[test]
+    fn parse_options_kwargs() {
+        let _options = PipelineParser::parse(
+            Rule::optionsDecl,
+            "options { timeout(time: 4, unit: 'HOURS') }")
+            .unwrap().next().unwrap();
+    }
+
+    /*
+     * WHY DOES THIS SYNTAX EXIST
+     *
+     * So annoying. "Declarative"
+     */
+    #[test]
+    fn parse_options_nested_func() {
+        let _options = PipelineParser::parse(
+            Rule::optionsDecl,
+            "options { buildDiscarder(logRotator(daysToKeepStr: '10')) }")
+            .unwrap().next().unwrap();
+    }
+
+    #[test]
+    fn parse_triggers() {
+        let _t = PipelineParser::parse(
+            Rule::triggersDecl,
+            "triggers { pollSCM('H * * * *') }")
+            .unwrap().next().unwrap();
+    }
+
+    #[test]
+    fn parse_environment() {
+        let _e = PipelineParser::parse(
+            Rule::environmentDecl,
+            r#"environment {
+                DISABLE_PROXY_CACHE = 'true'
+            }"#)
+            .unwrap().next().unwrap();
+    }
+
+    #[test]
+    fn parse_block_steps() {
+        let _s = PipelineParser::parse(
+            Rule::step,
+            "dir('foo') { sh 'make' }")
+            .unwrap().next().unwrap();
+    }
+
 }
