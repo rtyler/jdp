@@ -92,10 +92,10 @@ envProperty = {
               }
 credentialProperty = { IDENT ~
                         "=" ~
-                        "credentials(" ~ string ~ ")"
+                        "credentials" ~ opening_paren ~ string ~ closing_paren
                       }
 
-func = { IDENT ~ "(" ~ (func | kwargs | args)? ~ ")" }
+func = { IDENT ~ opening_paren? ~ (kwargs | args | func)? ~ closing_paren? }
 
 inputDecl = { "input" ~
               opening_brace ~

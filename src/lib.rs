@@ -107,6 +107,14 @@ pipeline {
     }
 
     #[test]
+    fn parse_options_optional_parens() {
+        let _options = PipelineParser::parse(
+            Rule::optionsDecl,
+            "options { buildDiscarder logRotator(daysToKeepStr: '10') }")
+            .unwrap().next().unwrap();
+    }
+
+    #[test]
     fn parse_triggers() {
         let _t = PipelineParser::parse(
             Rule::triggersDecl,
