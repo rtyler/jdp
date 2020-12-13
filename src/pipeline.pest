@@ -13,6 +13,7 @@ pipeline = _{ SOI ~ shebang? ~
                     agentDecl
                     | environmentDecl
                     | optionsDecl
+                    | parametersDecl
                     | postDecl
                     | toolsDecl
                     | triggersDecl
@@ -115,6 +116,13 @@ parallelDecl = { "parallel" ~
                  (stage)+ ~
                  closing_brace
                }
+
+parametersDecl = { "parameters" ~
+                opening_brace ~
+                // Not exactly a step, but the syntax looks the same to me!
+                (step)* ~
+                closing_brace
+              }
 
 postDecl = { "post" ~
              opening_brace ~
