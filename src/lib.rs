@@ -2,8 +2,8 @@ extern crate pest;
 #[macro_use]
 extern crate pest_derive;
 
-use pest::Parser;
 use pest::error::Error as PestError;
+use pest::Parser;
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -33,18 +33,18 @@ mod tests {
 
     #[test]
     fn parse_string_single() {
-        let _str = PipelineParser::parse(
-            Rule::string,
-            r#"'hello world'"#)
-            .unwrap().next().unwrap();
+        let _str = PipelineParser::parse(Rule::string, r#"'hello world'"#)
+            .unwrap()
+            .next()
+            .unwrap();
     }
 
     #[test]
     fn parse_string_double() {
-        let _str = PipelineParser::parse(
-            Rule::string,
-            r#""hello world""#)
-            .unwrap().next().unwrap();
+        let _str = PipelineParser::parse(Rule::string, r#""hello world""#)
+            .unwrap()
+            .next()
+            .unwrap();
     }
 
     #[test]
@@ -63,7 +63,8 @@ pipeline {
         }
     }
 }
-"#)
+"#,
+        )
         .expect("Failed to parse")
         .next()
         .expect("Failed to iterate");
@@ -71,26 +72,29 @@ pipeline {
 
     #[test]
     fn parse_no_options() {
-        let _options = PipelineParser::parse(
-            Rule::optionsDecl,
-            "options { }")
-            .unwrap().next().unwrap();
+        let _options = PipelineParser::parse(Rule::optionsDecl, "options { }")
+            .unwrap()
+            .next()
+            .unwrap();
     }
 
     #[test]
     fn parse_options_no_args() {
-        let _options = PipelineParser::parse(
-            Rule::optionsDecl,
-            "options { timestamps() }")
-            .unwrap().next().unwrap();
+        let _options = PipelineParser::parse(Rule::optionsDecl, "options { timestamps() }")
+            .unwrap()
+            .next()
+            .unwrap();
     }
 
     #[test]
     fn parse_options_kwargs() {
         let _options = PipelineParser::parse(
             Rule::optionsDecl,
-            "options { timeout(time: 4, unit: 'HOURS') }")
-            .unwrap().next().unwrap();
+            "options { timeout(time: 4, unit: 'HOURS') }",
+        )
+        .unwrap()
+        .next()
+        .unwrap();
     }
 
     /*
@@ -102,24 +106,30 @@ pipeline {
     fn parse_options_nested_func() {
         let _options = PipelineParser::parse(
             Rule::optionsDecl,
-            "options { buildDiscarder(logRotator(daysToKeepStr: '10')) }")
-            .unwrap().next().unwrap();
+            "options { buildDiscarder(logRotator(daysToKeepStr: '10')) }",
+        )
+        .unwrap()
+        .next()
+        .unwrap();
     }
 
     #[test]
     fn parse_options_optional_parens() {
         let _options = PipelineParser::parse(
             Rule::optionsDecl,
-            "options { buildDiscarder logRotator(daysToKeepStr: '10') }")
-            .unwrap().next().unwrap();
+            "options { buildDiscarder logRotator(daysToKeepStr: '10') }",
+        )
+        .unwrap()
+        .next()
+        .unwrap();
     }
 
     #[test]
     fn parse_triggers() {
-        let _t = PipelineParser::parse(
-            Rule::triggersDecl,
-            "triggers { pollSCM('H * * * *') }")
-            .unwrap().next().unwrap();
+        let _t = PipelineParser::parse(Rule::triggersDecl, "triggers { pollSCM('H * * * *') }")
+            .unwrap()
+            .next()
+            .unwrap();
     }
 
     #[test]
@@ -128,16 +138,19 @@ pipeline {
             Rule::environmentDecl,
             r#"environment {
                 DISABLE_PROXY_CACHE = 'true'
-            }"#)
-            .unwrap().next().unwrap();
+            }"#,
+        )
+        .unwrap()
+        .next()
+        .unwrap();
     }
 
     #[test]
     fn parse_block_steps() {
-        let _s = PipelineParser::parse(
-            Rule::step,
-            "dir('foo') { sh 'make' }")
-            .unwrap().next().unwrap();
+        let _s = PipelineParser::parse(Rule::step, "dir('foo') { sh 'make' }")
+            .unwrap()
+            .next()
+            .unwrap();
     }
 
     #[test]
@@ -153,13 +166,15 @@ pipeline {
                 extensions: [
                     [name: "refs/heads/${env.BRANCH_NAME}"],
                 ],
-            ])"#)
-            .unwrap().next().unwrap();
+            ])"#,
+        )
+        .unwrap()
+        .next()
+        .unwrap();
     }
 
     #[test]
     fn parse_not_exactly_declarative_is_it_step() {
-
         let _s = PipelineParser::parse(
             Rule::step,
             r#"checkout([
@@ -169,8 +184,11 @@ pipeline {
                       url: scm.userRemoteConfigs[0].url
                     ]
                 ],
-            ])"#)
-            .unwrap().next().unwrap();
+            ])"#,
+        )
+        .unwrap()
+        .next()
+        .unwrap();
     }
 
     #[test]
@@ -199,8 +217,11 @@ pipeline {
 
                 writeJSON(file: 'task-definition.dev.json',
                         json: readYaml(text: readFile('deploy/task-definition.yml')))
-            }"#)
-        .unwrap().next().unwrap();
+            }"#,
+        )
+        .unwrap()
+        .next()
+        .unwrap();
     }
 
     #[test]
@@ -216,7 +237,10 @@ pipeline {
                                                     .replaceAll('@@FAMILY@@', params.FAMILY)))
                 sh 'echo DEV task definition:'
                 sh 'cat task-definition.dev.json'
-            }"#)
-        .unwrap().next().unwrap();
+            }"#,
+        )
+        .unwrap()
+        .next()
+        .unwrap();
     }
 }
