@@ -7,11 +7,11 @@ edition = "2018"
 
 [lib]
 name = "jdp"
-source = "src/lib.rs"
+path = "src/lib.rs"
 
 [[bin]]
 name = "jdp"
-source = "src/main.rs"
+path = "src/main.rs"
 
 [dependencies]
 gumdrop = "~0.8.0"

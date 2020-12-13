@@ -1,0 +1,104 @@
+/*
+ * This deployment pipeline does not handle the building and pushing of the
+ * container to ECR, but rather only handles the orchestration of pushing a
+ * named container from one ECS environment to another
+ */
+
+pipeline {
+    agent {
+        kubernetes {
+            defaultContainer 'aws'
+            yamlFile 'deploy/containers.yml'
+        }
+    }
+
+    options {
+        ansiColor('xterm')
+        timeout(210)
+        buildDiscarder logRotator(numToKeepStr: '128')
+    }
+
+    parameters {
+      string description: 'A deployed version of the container, available in the prod ECR', name: 'IMAGE', trim: true
+      string description: 'The name of the task definition to update', name: 'FAMILY', trim: true, defaultValue: 'REDACTED'
+    }
+
+    environment {
+        AWS_DEFAULT_REGION = 'us-east-2'
+        AWS_DEFAULT_OUTPUT = 'json'
+    }
+
+    stages {
+        /*
+         * This stage will prepare the task-definition for deployment, and will
+         * generate the files for each stage
+         */
+        stage('Prepare') {
+            steps {
+                sh 'rm -f task-definition.*.json'
+
+                writeJSON(file: 'task-definition.dev.json',
+                        json: readYaml(text: readFile('deploy/task-definition.yml')
+                                                    .replaceAll('@@IMAGE@@', params.IMAGE)
+                                                    .replaceAll('@@FAMILY@@', params.FAMILY)))
+                sh 'echo DEV task definition:'
+                sh 'cat task-definition.dev.json'
+            }
+        }
+
+        /*
+         * The dev environment should always be updated without approval when any changes are
+         * pushed.
+         */
+        stage('Development') {
+            environment {
+                AWS_ACCESS_KEY_ID = credentials('REDACTED')
+            }
+
+            steps {
+                sh 'aws ecs register-task-definition --cli-input-json file://`pwd`/task-definition.dev.json > task-output.dev.json'
+
+                /*
+                 * Technically this could all be done in shell scripts if we
+                 * had a container with `jq` installed, see the gist below for
+                 * reference.
+                 *
+                 * At this point it's just easier to use the `script` escape
+                 * hatch in Jenkins Pipeline to invoke some Scripted Pipeline
+                 * steps
+                 *
+                 *  https://gist.github.com/tstrohmeier/3da60392a5ea2eecbe32895e6624a2b4
+                 */
+                script {
+                    def taskOutput = readJSON file: 'task-output.dev.json'
+                    def revision = taskOutput.taskDefinition.revision
+                    sh "aws ecs update-service --cluster ${CLUSTER} --service ${SERVICE} --task-definition ${FAMILY}:${revision}"
+                }
+            }
+
+            post {
+                failure {
+                    slackSend color: 'danger',
+                            message: ":siren: Failed to deploy a new task definition for REDACTED in dev :siren:  -  ${env.RUN_DISPLAY_URL}"
+                }
+
+                success {
+                    slackSend message: ":thinking_face: A new REDACTED task definition is ready to deploy to staging: ${env.RUN_DISPLAY_URL}" }
+            }
+        }
+    }
+
+    post {
+        always {
+            /*
+                * Just to be safe we'll always clean up our generated JSON
+                * files
+                */
+            sh 'rm -f *.json'
+        }
+    }
+
+}
+
+// vim: ft=groovy
+

@@ -1,4 +1,3 @@
-
 use jdp::*;
 
 use gumdrop::Options;
@@ -25,7 +24,7 @@ enum Command {
 struct CheckOpts {
     #[options(help = "print help message")]
     help: bool,
-    #[options(free, required, help="Path to a Jenkinsfile")]
+    #[options(free, required, help = "Path to a Jenkinsfile")]
     file: std::path::PathBuf,
 }
 
@@ -46,10 +45,9 @@ fn main() {
             if result.is_err() {
                 println!("Failed to parse!: {:#?}", result);
                 std::process::exit(1);
-            }
-            else {
+            } else {
                 println!("Looks valid! Great work!");
             }
-        },
+        }
     }
 }

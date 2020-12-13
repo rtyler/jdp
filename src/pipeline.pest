@@ -13,6 +13,7 @@ pipeline = _{ SOI ~ shebang? ~
                     agentDecl
                     | environmentDecl
                     | optionsDecl
+                    | parametersDecl
                     | postDecl
                     | toolsDecl
                     | triggersDecl
@@ -92,10 +93,10 @@ envProperty = {
               }
 credentialProperty = { IDENT ~
                         "=" ~
-                        "credentials(" ~ string ~ ")"
+                        "credentials" ~ opening_paren ~ string ~ closing_paren
                       }
 
-func = { IDENT ~ "(" ~ (func | kwargs | args)? ~ ")" }
+func = { IDENT ~ opening_paren? ~ (kwargs | args | func)? ~ closing_paren? }
 
 inputDecl = { "input" ~
               opening_brace ~
@@ -116,6 +117,13 @@ parallelDecl = { "parallel" ~
                  closing_brace
                }
 
+parametersDecl = { "parameters" ~
+                opening_brace ~
+                // Not exactly a step, but the syntax looks the same to me!
+                (step)* ~
+                closing_brace
+              }
+
 postDecl = { "post" ~
              opening_brace ~
              (postBlock+) ~
@@ -133,6 +141,16 @@ postBlock = {
             | "unsuccessful"
             | "cleanup"
             ) ~ opening_brace ~ (step)+ ~ closing_brace }
+
+scriptStep = { "script" ~ opening_brace ~ groovy ~ closing_brace }
+groovy = {
+        (
+            // Handle nested structures
+            (opening_brace ~ groovy ~ closing_brace)? ~
+            !(closing_brace) ~
+            ANY
+        )*
+         }
 
 stagesDecl = { "stages" ~
                 opening_brace ~
@@ -154,7 +172,7 @@ stage = { "stage(" ~ string ~ ")" ~
 
 stepsDecl = { "steps" ~
             opening_brace ~
-            (step)+ ~
+            (step | scriptStep)+ ~
             closing_brace
             }
 
@@ -162,7 +180,10 @@ stepsDecl = { "steps" ~
 step_args = _{ args | kwargs | array_args | map_args }
 // A simple step can be invoked with parenthesis or without
 simple_step = _{ IDENT ~
-                ((opening_paren ~ step_args ~ closing_paren) | step_args)
+                ((opening_paren ~ step_args ~ closing_paren) | step_args) ~
+                // This allows for really gross abusive chaining of Groovy
+                // functionality off the end of a step invocation
+                ("." ~ simple_step)*
                 }
 // A block step is something like dir('foo') { } that accepts steps within it
 // in many cases these will have keyword arguments like withCredentials
@@ -174,7 +195,7 @@ block_step = _{ IDENT ~
               }
 step = { block_step | simple_step }
 
-arg = _{ string | BOOL | number | magic_vars | array_args | map_args }
+arg = _{ string | BOOL | number | magic_vars | array_args | map_args | step }
 args = { (arg ~ COMMA?)+ }
 kwargs = _{ (kwarg ~ COMMA?)+ }
 kwarg = { IDENT~ ":" ~ arg }
@@ -187,9 +208,10 @@ property = { IDENT ~ "=" ~ string }
 
 // These are magic variables that are legitimate to use in "declarative"
 // pipeline
-magic_vars = _{ envRef | scmRef }
+magic_vars = _{ envRef | scmRef | paramsRef }
 envRef = { "env." ~ nestedRef }
 scmRef = { "scm." ~ nestedRef }
+paramsRef = { "params." ~ nestedRef }
 // Just parse anything until the whitespace I guess
 nestedRef = _{ (IDENT ~ (opening_brack ~ (number) ~ closing_brack)? ~ "."?)+ }
 
