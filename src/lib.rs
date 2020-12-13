@@ -186,4 +186,37 @@ pipeline {
             }"#)
         .unwrap().next().unwrap();
     }
+
+    /*
+     * I put a step in your step so you can step while you step
+     */
+    #[test]
+    fn parse_sup_dawg_heard_you_liked_steps() {
+        let _s = PipelineParser::parse(
+            Rule::stepsDecl,
+            r#"steps {
+                sh 'rm -f task-definition.*.json'
+
+                writeJSON(file: 'task-definition.dev.json',
+                        json: readYaml(text: readFile('deploy/task-definition.yml')))
+            }"#)
+        .unwrap().next().unwrap();
+    }
+
+    #[test]
+    fn parse_abusive_chaining_of_groovy_on_steps() {
+        let _s = PipelineParser::parse(
+            Rule::stepsDecl,
+            r#"steps {
+                sh 'rm -f task-definition.*.json'
+
+                writeJSON(file: 'task-definition.dev.json',
+                        json: readYaml(text: readFile('deploy/task-definition.yml')
+                                                    .replaceAll('@@IMAGE@@', params.IMAGE)
+                                                    .replaceAll('@@FAMILY@@', params.FAMILY)
+                sh 'echo DEV task definition:'
+                sh 'cat task-definition.dev.json'
+            }"#)
+        .unwrap().next().unwrap();
+    }
 }

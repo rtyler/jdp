@@ -192,7 +192,7 @@ block_step = _{ IDENT ~
               }
 step = { block_step | simple_step }
 
-arg = _{ string | BOOL | number | magic_vars | array_args | map_args }
+arg = _{ string | BOOL | number | magic_vars | array_args | map_args | step }
 args = { (arg ~ COMMA?)+ }
 kwargs = _{ (kwarg ~ COMMA?)+ }
 kwarg = { IDENT~ ":" ~ arg }
@@ -205,9 +205,10 @@ property = { IDENT ~ "=" ~ string }
 
 // These are magic variables that are legitimate to use in "declarative"
 // pipeline
-magic_vars = _{ envRef | scmRef }
+magic_vars = _{ envRef | scmRef | paramsRef }
 envRef = { "env." ~ nestedRef }
 scmRef = { "scm." ~ nestedRef }
+paramsRef = { "params." ~ nestedRef }
 // Just parse anything until the whitespace I guess
 nestedRef = _{ (IDENT ~ (opening_brack ~ (number) ~ closing_brack)? ~ "."?)+ }
 
