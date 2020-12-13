@@ -142,6 +142,16 @@ postBlock = {
             | "cleanup"
             ) ~ opening_brace ~ (step)+ ~ closing_brace }
 
+scriptStep = { "script" ~ opening_brace ~ groovy ~ closing_brace }
+groovy = {
+        (
+            // Handle nested structures
+            (opening_brace ~ groovy ~ closing_brace)? ~
+            !(closing_brace) ~
+            ANY
+        )*
+         }
+
 stagesDecl = { "stages" ~
                 opening_brace ~
                 (stage)+ ~
@@ -162,7 +172,7 @@ stage = { "stage(" ~ string ~ ")" ~
 
 stepsDecl = { "steps" ~
             opening_brace ~
-            (step)+ ~
+            (step | scriptStep)+ ~
             closing_brace
             }
 

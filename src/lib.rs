@@ -173,4 +173,17 @@ pipeline {
             .unwrap().next().unwrap();
     }
 
+    #[test]
+    fn parse_script_step() {
+        let _s = PipelineParser::parse(
+            Rule::stepsDecl,
+            r#"steps {
+                script {
+                    def taskOutput = readJSON file: 'task-output.dev.json'
+                    def revision = taskOutput.taskDefinition.revision
+                    sh "aws ecs update-service --cluster ${CLUSTER} --service ${SERVICE} --task-definition ${FAMILY}:${revision}"
+                }
+            }"#)
+        .unwrap().next().unwrap();
+    }
 }
