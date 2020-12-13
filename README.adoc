@@ -1,3 +1,23 @@
 = Jenkins Declarative Parser
 
 This repository contains an grammar and parser for the link:https://www.jenkins.io/doc/book/pipeline/#declarative-pipeline-fundamentals[Jenkins Declarative Pipeline] syntax. It's for educational and testing purposes :)
+
+
+== CLI
+
+This repository provides the `jdp` command line utility which can be used for syntax
+checking a declarative `Jenkinsfile`:
+
+[source,bash]
+----
+❯ jdp check data/valid/complex-deployment/Jenkinsfile
+Checking: data/valid/complex-deployment/Jenkinsfile
+Looks valid! Great work!
+----
+
+== Caveats
+
+This parser is **not** a Groovy syntax parser, and as such any advanced or wacky
+groovy that is littered around a `Jenkinsfile` should largely be ignored. This
+includes the `script` step which is basically checked to make sure that there is
+a `script { }` block, but anything within it is explicitly ignored.
