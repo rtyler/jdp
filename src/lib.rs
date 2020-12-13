@@ -132,4 +132,37 @@ pipeline {
             .unwrap().next().unwrap();
     }
 
+    #[test]
+    fn parse_complex_step() {
+        let _s = PipelineParser::parse(
+            Rule::step,
+            r#"checkout([
+                $class: 'GitSCM',
+                branches: [
+                    [name: "refs/heads/${env.BRANCH_NAME}"]
+                ],
+                gitTool: scm.gitTool,
+                extensions: [
+                    [name: "refs/heads/${env.BRANCH_NAME}"],
+                ],
+            ])"#)
+            .unwrap().next().unwrap();
+    }
+
+    #[test]
+    fn parse_not_exactly_declarative_is_it_step() {
+
+        let _s = PipelineParser::parse(
+            Rule::step,
+            r#"checkout([
+                $class: 'GitSCM',
+                userRemoteConfigs: [
+                    [ refspec: scm.userRemoteConfigs[0].refspec,
+                      url: scm.userRemoteConfigs[0].url
+                    ]
+                ],
+            ])"#)
+            .unwrap().next().unwrap();
+    }
+
 }

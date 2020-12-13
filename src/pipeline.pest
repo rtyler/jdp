@@ -3,6 +3,7 @@
 // pipeline syntax as possible
 //
 pipeline = _{ SOI ~ shebang? ~
+                    (library)* ~
                     "pipeline" ~
                     opening_brace ~
                     // I am pretty sure this grammar is wrong and there has to
@@ -24,11 +25,10 @@ pipeline = _{ SOI ~ shebang? ~
 // XXX: Why won't this work!
 //shebang = _{ "#!" ~ (!NEWLINE ~ ANY)* }
 shebang = _{ "#!groovy" }
-// Garbage is any Groovy defined outside of the pipeline block, basically
-// making a mockery of Declarative pipeline :)
-garbage = {
-            "@" ~ (!NEWLINE ~ ANY)*
-          }
+// NOTE: This is currenlty only allowing applying the library annotation onto
+// `_` which is a convention for shared libraries, but technically the
+// annotation can be applied to just about any symbol
+library = { "@" ~ "Library" ~ opening_paren ~ string ~ closing_paren ~ "_" }
 
 agentDecl = { "agent" ~
               ("any"
@@ -159,8 +159,11 @@ stepsDecl = { "steps" ~
             }
 
 
-step_args = _{ args | kwargs | array_kwargs }
-simple_step = _{ IDENT ~ step_args }
+step_args = _{ args | kwargs | array_args | map_args }
+// A simple step can be invoked with parenthesis or without
+simple_step = _{ IDENT ~
+                ((opening_paren ~ step_args ~ closing_paren) | step_args)
+                }
 // A block step is something like dir('foo') { } that accepts steps within it
 // in many cases these will have keyword arguments like withCredentials
 block_step = _{ IDENT ~
@@ -169,17 +172,26 @@ block_step = _{ IDENT ~
                 (step)+ ~
                 closing_brace
               }
-step = { simple_step | block_step }
+step = { block_step | simple_step }
 
-arg = _{ string | BOOL | number }
+arg = _{ string | BOOL | number | magic_vars | array_args | map_args }
 args = { (arg ~ COMMA?)+ }
 kwargs = _{ (kwarg ~ COMMA?)+ }
 kwarg = { IDENT~ ":" ~ arg }
 
+map_args = _{ opening_brack ~ kwargs ~ closing_brack }
 // This syntax is some Groovy invocation magic that I'm not sure I fully
 // understand at the moment
-array_kwargs = _{ "[[" ~ kwargs ~ "]]" }
+array_args = _{ opening_brack ~ args ~ closing_brack }
 property = { IDENT ~ "=" ~ string }
+
+// These are magic variables that are legitimate to use in "declarative"
+// pipeline
+magic_vars = _{ envRef | scmRef }
+envRef = { "env." ~ nestedRef }
+scmRef = { "scm." ~ nestedRef }
+// Just parse anything until the whitespace I guess
+nestedRef = _{ (IDENT ~ (opening_brack ~ (number) ~ closing_brack)? ~ "."?)+ }
 
 
 toolsDecl = { "tools" ~
