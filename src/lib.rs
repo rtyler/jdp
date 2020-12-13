@@ -213,7 +213,7 @@ pipeline {
                 writeJSON(file: 'task-definition.dev.json',
                         json: readYaml(text: readFile('deploy/task-definition.yml')
                                                     .replaceAll('@@IMAGE@@', params.IMAGE)
-                                                    .replaceAll('@@FAMILY@@', params.FAMILY)
+                                                    .replaceAll('@@FAMILY@@', params.FAMILY)))
                 sh 'echo DEV task definition:'
                 sh 'cat task-definition.dev.json'
             }"#)

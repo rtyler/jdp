@@ -180,7 +180,10 @@ stepsDecl = { "steps" ~
 step_args = _{ args | kwargs | array_args | map_args }
 // A simple step can be invoked with parenthesis or without
 simple_step = _{ IDENT ~
-                ((opening_paren ~ step_args ~ closing_paren) | step_args)
+                ((opening_paren ~ step_args ~ closing_paren) | step_args) ~
+                // This allows for really gross abusive chaining of Groovy
+                // functionality off the end of a step invocation
+                ("." ~ simple_step)*
                 }
 // A block step is something like dir('foo') { } that accepts steps within it
 // in many cases these will have keyword arguments like withCredentials
