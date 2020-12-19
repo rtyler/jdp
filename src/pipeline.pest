@@ -229,15 +229,23 @@ triggersDecl = { "triggers" ~
                 (func)* ~
                 closing_brace
               }
+
+// when {} directives are quite complex
+///////////////////////////////////////
+whenAll = { "allOf" ~ opening_brace ~ whenCondition+ ~ closing_brace }
+whenAny = { "anyOf" ~ opening_brace ~ whenCondition+ ~ closing_brace }
+whenBranch = { "branch" ~ string }
+whenCondition = { whenExpression | whenBranch | whenEnvironment }
 whenDecl = { "when" ~
                 opening_brace ~
-                (
-                    ("expression" ~ opening_brace ~ (!closing_brace ~ ANY)* ~ closing_brace)
-                    | ("branch" ~ string)
-                ) ~
+                (whenPredicate | whenCondition)+ ~
                 closing_brace
               }
-
+whenEnvironment = { "environment" ~ kwargs }
+whenExpression = { "expression" ~ opening_brace ~ (!closing_brace ~ ANY)* ~ closing_brace }
+whenNot = { "not" ~ opening_brace ~ whenCondition+ ~ closing_brace }
+whenPredicate = { whenNot | whenAll | whenAny }
+///////////////////////////////////////
 
 IDENT = @{ (ASCII_ALPHA | "$") ~ (ASCII_ALPHANUMERIC | "_")* }
 
