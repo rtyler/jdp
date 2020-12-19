@@ -2,4 +2,6 @@
 
 echo ">> Linting $1 against a local Jenkins"
 ssh -p 2022 admin@localhost declarative-linter < $1
+STATUS=$?
+if [ $STATUS -ne 0 ]; then exit $STATUS; fi;
 echo "---"
