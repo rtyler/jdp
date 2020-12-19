@@ -2,7 +2,6 @@ extern crate pest;
 #[macro_use]
 extern crate pest_derive;
 
-use log::*;
 use pest::error::Error as PestError;
 use pest::Parser;
 use std::path::PathBuf;

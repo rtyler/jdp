@@ -157,7 +157,7 @@ groovy = {
 
 stagesDecl = { "stages" ~
                 opening_brace ~
-                (stage)+ ~
+                stage+ ~
                 closing_brace
               }
 
