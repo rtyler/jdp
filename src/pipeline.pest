@@ -8,16 +8,19 @@ pipeline = _{ SOI ~ shebang? ~
                     opening_brace ~
                     // I am pretty sure this grammar is wrong and there has to
                     // a better way to allow these declarations anywhere within
-                    // the block, but still only allow one of each
+                    // the block, but still only allow one of each.
+                    // For now the parser code will have to inspect this itself
                     (
+                    // An agent declaration at the root level is required
                     agentDecl
+                    // A stages declaration is also required
+                    | stagesDecl
                     | environmentDecl
                     | optionsDecl
                     | parametersDecl
                     | postDecl
                     | toolsDecl
                     | triggersDecl
-                    | stagesDecl{1}
                     )*
                     ~
                     closing_brace ~

@@ -29,6 +29,7 @@ struct CheckOpts {
 }
 
 fn main() {
+    pretty_env_logger::init();
     let opts = JdpOptions::parse_args_default_or_exit();
 
     if opts.command.is_none() {

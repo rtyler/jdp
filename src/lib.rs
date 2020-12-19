@@ -2,6 +2,7 @@ extern crate pest;
 #[macro_use]
 extern crate pest_derive;
 
+use log::*;
 use pest::error::Error as PestError;
 use pest::Parser;
 use std::path::PathBuf;
@@ -23,7 +24,42 @@ pub fn parse_file(path: &PathBuf) -> Result<(), pest::error::Error<Rule>> {
 }
 
 pub fn parse_pipeline_string(buffer: &str) -> Result<(), PestError<Rule>> {
-    let _parser = PipelineParser::parse(Rule::pipeline, buffer)?;
+    use pest::error::ErrorVariant;
+    let mut parser = PipelineParser::parse(Rule::pipeline, buffer)?;
+
+    let mut agents = false;
+    let mut stages = false;
+
+    while let Some(parsed) = parser.next() {
+        match parsed.as_rule() {
+            Rule::agentDecl => {
+                if agents {
+                    warn!("Did I just see two agent directives?");
+                }
+                agents = true;
+            },
+            Rule::stagesDecl => {
+                if stages {
+                    warn!("Did I just see two stages directives?");
+                }
+                stages = true;
+            },
+            _ => {},
+        }
+    }
+    /*
+     * Both agents and stages are required, the lack thereof is an error
+     */
+    if !agents || !stages {
+        let error = PestError::new_from_pos(
+            ErrorVariant::ParsingError {
+                positives: vec![],
+                negatives: vec![],
+            },
+            pest::Position::from_start(buffer));
+        return Err(error);
+    }
+
     Ok(())
 }
 

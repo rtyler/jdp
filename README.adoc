@@ -21,3 +21,20 @@ This parser is **not** a Groovy syntax parser, and as such any advanced or wacky
 groovy that is littered around a `Jenkinsfile` should largely be ignored. This
 includes the `script` step which is basically checked to make sure that there is
 a `script { }` block, but anything within it is explicitly ignored.
+
+
+== Development
+
+Development of `jdp` is all driven through the use of `cargo`, e.g. `cargo test`.
+
+It's relatively straightforward to use a local test Jenkins environment to validate
+the `Jenkinsfile` located in `data/`. There is a major caveat in that many files
+will fail to validate if certain plugins are not installed on the Jenkins.
+
+Once a local Jenkins is created, be sure to set a fixed sshd port in the
+`/configureSecurity` view (e.g. `2022`).
+
+[source]
+----
+find data/valid -iname Jenkinsfile -exec ./scripts/declarative-linter {}  \;
+----
