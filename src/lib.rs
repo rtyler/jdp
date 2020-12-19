@@ -34,17 +34,27 @@ pub fn parse_pipeline_string(buffer: &str) -> Result<(), PestError<Rule>> {
         match parsed.as_rule() {
             Rule::agentDecl => {
                 if agents {
-                    warn!("Did I just see two agent directives?");
+                    return Err(PestError::new_from_span(
+                        ErrorVariant::CustomError {
+                            message: "Cannot have two top-level `agent` directives".to_string(),
+                        },
+                        parsed.as_span(),
+                    ));
                 }
                 agents = true;
-            },
+            }
             Rule::stagesDecl => {
                 if stages {
-                    warn!("Did I just see two stages directives?");
+                    return Err(PestError::new_from_span(
+                        ErrorVariant::CustomError {
+                            message: "Cannot have two top-level `stages` directives".to_string(),
+                        },
+                        parsed.as_span(),
+                    ));
                 }
                 stages = true;
-            },
-            _ => {},
+            }
+            _ => {}
         }
     }
     /*
@@ -56,7 +66,8 @@ pub fn parse_pipeline_string(buffer: &str) -> Result<(), PestError<Rule>> {
                 positives: vec![],
                 negatives: vec![],
             },
-            pest::Position::from_start(buffer));
+            pest::Position::from_start(buffer),
+        );
         return Err(error);
     }
 
