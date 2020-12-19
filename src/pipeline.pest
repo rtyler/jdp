@@ -57,7 +57,7 @@ k8sAgent = { "kubernetes" ~
            }
 dockerAgent = { "docker" ~
              opening_brace ~
-             ("reuseNode" ~ BOOL)? ~
+             ("reuseNode" ~ bool)? ~
              ("image" ~ string)? ~
              ("label" ~ string)? ~
              ("args" ~ string)? ~
@@ -68,7 +68,7 @@ dockerAgent = { "docker" ~
            }
 dockerfileAgent = { "dockerfile" ~
              opening_brace ~
-             ("reuseNode" ~ BOOL)? ~
+             ("reuseNode" ~ bool)? ~
              ("filename" ~ string)? ~
              ("dir" ~ string)? ~
              ("label" ~ string)? ~
@@ -105,6 +105,7 @@ inputDecl = { "input" ~
               opening_brace ~
              ("message" ~ string)? ~
              ("submitter" ~ string)? ~
+             ("id" ~ string)? ~
               closing_brace
             }
 
@@ -198,7 +199,7 @@ block_step = _{ IDENT ~
               }
 step = { block_step | simple_step }
 
-arg = _{ string | BOOL | number | magic_vars | array_args | map_args | step }
+arg = _{ string | bool | number | magic_vars | array_args | map_args | step }
 args = { (arg ~ COMMA?)+ }
 kwargs = _{ (kwarg ~ COMMA?)+ }
 kwarg = { IDENT~ ":" ~ arg }
@@ -234,17 +235,22 @@ triggersDecl = { "triggers" ~
 ///////////////////////////////////////
 whenAll = { "allOf" ~ opening_brace ~ whenCondition+ ~ closing_brace }
 whenAny = { "anyOf" ~ opening_brace ~ whenCondition+ ~ closing_brace }
+whenBeforeInput = { "beforeInput" ~ bool }
+whenBeforeAgent = { "beforeAgent" ~ bool }
+whenBeforeOptions = { "beforeOptions" ~ bool }
 whenBranch = { "branch" ~ string }
-whenCondition = { whenExpression | whenBranch | whenEnvironment }
+whenCondition = { whenExpression | whenBranch | whenEnvironment | whenTriggered }
 whenDecl = { "when" ~
                 opening_brace ~
-                (whenPredicate | whenCondition)+ ~
+                (whenQualifiers | whenPredicate | whenCondition)+ ~
                 closing_brace
               }
 whenEnvironment = { "environment" ~ kwargs }
 whenExpression = { "expression" ~ opening_brace ~ (!closing_brace ~ ANY)* ~ closing_brace }
 whenNot = { "not" ~ opening_brace ~ whenCondition+ ~ closing_brace }
 whenPredicate = { whenNot | whenAll | whenAny }
+whenQualifiers = { whenBeforeInput | whenBeforeOptions | whenBeforeAgent }
+whenTriggered = { "triggeredBy" ~ string }
 ///////////////////////////////////////
 
 IDENT = @{ (ASCII_ALPHA | "$") ~ (ASCII_ALPHANUMERIC | "_")* }
@@ -276,7 +282,7 @@ number = @{ '0'..'9'+ }
 integer = @{ number | "-" ~ "0"* ~ '1'..'9' ~ number? }
 
 COMMA = @{ "," }
-BOOL = @{ (TRUE | FALSE) }
+bool = @{ (TRUE | FALSE) }
 TRUE = { "true" }
 FALSE = { "false" }
 
