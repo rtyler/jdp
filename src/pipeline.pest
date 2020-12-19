@@ -231,7 +231,10 @@ triggersDecl = { "triggers" ~
               }
 whenDecl = { "when" ~
                 opening_brace ~
-                ("expression" ~ opening_brace ~ (!closing_brace ~ ANY)* ~ closing_brace) ~
+                (
+                    ("expression" ~ opening_brace ~ (!closing_brace ~ ANY)* ~ closing_brace)
+                    | ("branch" ~ string)
+                ) ~
                 closing_brace
               }
 

@@ -1,0 +1,19 @@
+// https://www.jenkins.io/doc/book/pipeline/syntax/#when
+pipeline {
+    agent any
+    stages {
+        stage('Example Build') {
+            steps {
+                echo 'Hello World'
+            }
+        }
+        stage('Example Deploy') {
+            when {
+                branch 'production'
+            }
+            steps {
+                echo 'Deploying'
+            }
+        }
+    }
+}
