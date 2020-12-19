@@ -1,0 +1,26 @@
+// This pipeline is just not in the conventional ordering of directives
+pipeline {
+    post {
+        always {
+            sh 'env'
+        }
+    }
+
+    options {
+        timestamps()
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                sh 'env'
+            }
+        }
+    }
+
+    environment {
+        CC = 'clang'
+    }
+
+    agent any
+}
