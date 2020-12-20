@@ -28,6 +28,9 @@ struct CheckOpts {
     file: std::path::PathBuf,
 }
 
+/// The number of lines of context to show for errors
+const LINES_OF_CONTEXT: usize = 4;
+
 fn main() {
     pretty_env_logger::init();
     let opts = JdpOptions::parse_args_default_or_exit();
@@ -45,41 +48,52 @@ fn main() {
                 use std::fs::File;
                 use std::io::{BufRead, BufReader};
 
-                let file = File::open(&checkopts.file).expect("Failed to read the file again?");
-                let lines: Vec<String> = BufReader::new(file).lines().map(|l| l.unwrap()).collect();
+                if checkopts.file.is_file() {
+                    let file = File::open(&checkopts.file).expect("Failed to reopen file");
+                    let lines: Vec<String> =
+                        BufReader::new(file).lines().map(|l| l.unwrap()).collect();
 
-                let filename = checkopts.file.as_path().to_string_lossy();
-                println!("\n{}", filename);
-                for _ in 0..filename.len() {
-                    print!("-");
-                }
-                println!("");
-
-                match error.line_col {
-                    Pos((line, column)) => {
-                        let start_line = std::cmp::max(0, line - 4);
-
-                        for n in start_line..line {
-                            println!("{}: {}", n, lines[n]);
-                        }
-                        // Just a little spacer for the error
-                        print!("  ");
-                        for _ in 0..column {
-                            print!("-");
-                        }
-                        println!("^");
+                    let filename = checkopts.file.as_path().to_string_lossy();
+                    println!("\n{}", filename);
+                    for _ in 0..filename.len() {
+                        print!("-");
                     }
-                    Span(start, end) => {
-                        let start_line = std::cmp::max(0, start.0 - 4);
-                        for n in start_line..start.0 {
-                            println!("{}: {}", n, lines[n]);
+                    println!("");
+
+                    match error.line_col {
+                        Pos((line, column)) => {
+                            let start_line = if line < LINES_OF_CONTEXT {
+                                0
+                            } else {
+                                line - LINES_OF_CONTEXT
+                            };
+
+                            for n in start_line..line {
+                                println!("{}: {}", n, lines[n]);
+                            }
+                            // Just a little spacer for the error
+                            print!("  ");
+                            for _ in 0..column {
+                                print!("-");
+                            }
+                            println!("^");
                         }
-                        // Just a little spacer for the error
-                        print!("  ");
-                        for _ in 0..(end.1 - 2) {
-                            print!("-");
+                        Span(start, end) => {
+                            let start_line = if start.0 < LINES_OF_CONTEXT {
+                                0
+                            } else {
+                                start.0 - LINES_OF_CONTEXT
+                            };
+                            for n in start_line..start.0 {
+                                println!("{}: {}", n, lines[n]);
+                            }
+                            // Just a little spacer for the error
+                            print!("  ");
+                            for _ in 0..(end.1 - 2) {
+                                print!("-");
+                            }
+                            println!("^");
                         }
-                        println!("^");
                     }
                 }
 

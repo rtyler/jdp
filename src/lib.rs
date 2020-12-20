@@ -3,6 +3,7 @@ extern crate pest;
 extern crate pest_derive;
 
 use pest::error::Error as PestError;
+use pest::error::ErrorVariant;
 use pest::Parser;
 use std::path::PathBuf;
 
@@ -14,16 +15,33 @@ pub fn parse_file(path: &PathBuf) -> Result<(), pest::error::Error<Rule>> {
     use std::fs::File;
     use std::io::Read;
 
-    let mut file = File::open(path).expect(&format!("Failed to open {:?}", path));
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)
-        .expect("Failed to read file into string");
+    match File::open(path) {
+        Ok(mut file) => {
+            let mut contents = String::new();
 
-    parse_pipeline_string(&contents)
+            if let Err(e) = file.read_to_string(&mut contents) {
+                return Err(PestError::new_from_pos(
+                    ErrorVariant::CustomError {
+                        message: format!("{}", e),
+                    },
+                    pest::Position::from_start(""),
+                ));
+            } else {
+                return parse_pipeline_string(&contents);
+            }
+        }
+        Err(e) => {
+            return Err(PestError::new_from_pos(
+                ErrorVariant::CustomError {
+                    message: format!("{}", e),
+                },
+                pest::Position::from_start(""),
+            ));
+        }
+    }
 }
 
 pub fn parse_pipeline_string(buffer: &str) -> Result<(), PestError<Rule>> {
-    use pest::error::ErrorVariant;
     let mut parser = PipelineParser::parse(Rule::pipeline, buffer)?;
 
     let mut agents = false;
