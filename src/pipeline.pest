@@ -197,7 +197,9 @@ block_step = _{ IDENT ~
                 (step)+ ~
                 closing_brace
               }
-step = { block_step | simple_step }
+// Hard-coding this until the parser has richer symbol support
+checkout_step = { "checkout" ~ "scm" }
+step = { checkout_step | block_step | simple_step }
 
 arg = _{ string | bool | number | magic_vars | array_args | map_args | step }
 args = { (arg ~ COMMA?)+ }
