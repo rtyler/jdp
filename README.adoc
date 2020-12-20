@@ -2,7 +2,6 @@
 
 This repository contains an grammar and parser for the link:https://www.jenkins.io/doc/book/pipeline/#declarative-pipeline-fundamentals[Jenkins Declarative Pipeline] syntax. It's for educational and testing purposes :)
 
-
 == CLI
 
 This repository provides the `jdp` command line utility which can be used for syntax
@@ -14,6 +13,12 @@ checking a declarative `Jenkinsfile`:
 Checking: data/valid/complex-deployment/Jenkinsfile
 Looks valid! Great work!
 ----
+
+=== Installing
+
+You can download built release binaries from the link:https://github.com/rtyler/jdp/releases[GitHub Releases]
+**or** just run `cargo install jdp`.
+
 
 == Caveats
 
