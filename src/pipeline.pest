@@ -50,15 +50,19 @@ credentialProperty = { IDENT ~
                         "credentials" ~ opening_paren ~ string ~ closing_paren
                       }
 dockerAgent = { "docker" ~
-             opening_brace ~
-             ("reuseNode" ~ bool)? ~
-             ("image" ~ string)? ~
-             ("label" ~ string)? ~
-             ("args" ~ string)? ~
-             ("registryUrl" ~ string)? ~
-             ("registryCredentialsId" ~ string)? ~
-             ("customWorkspace" ~ string)? ~
-             closing_brace
+             (string
+             | (
+                opening_brace ~
+                ("reuseNode" ~ bool)? ~
+                ("image" ~ string)? ~
+                ("label" ~ string)? ~
+                ("args" ~ string)? ~
+                ("registryUrl" ~ string)? ~
+                ("registryCredentialsId" ~ string)? ~
+                ("customWorkspace" ~ string)? ~
+                closing_brace
+              )
+             )
            }
 
 dockerfileAgent = { "dockerfile" ~
