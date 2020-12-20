@@ -44,13 +44,11 @@ agentBlock = {
                 | ("label" ~ string)) ~
                 closing_brace
              }
-k8sAgent = { "kubernetes" ~
-             opening_brace ~
-             ("defaultContainer" ~ string)? ~
-             ("yaml" ~ string)? ~
-             ("yamlFile" ~ string)? ~
-             closing_brace
-           }
+
+credentialProperty = { IDENT ~
+                        "=" ~
+                        "credentials" ~ opening_paren ~ string ~ closing_paren
+                      }
 dockerAgent = { "docker" ~
              opening_brace ~
              ("reuseNode" ~ bool)? ~
@@ -62,6 +60,7 @@ dockerAgent = { "docker" ~
              ("customWorkspace" ~ string)? ~
              closing_brace
            }
+
 dockerfileAgent = { "dockerfile" ~
              opening_brace ~
              ("reuseNode" ~ bool)? ~
@@ -73,13 +72,6 @@ dockerfileAgent = { "dockerfile" ~
              ("customWorkspace" ~ string)? ~
              closing_brace
            }
-nodeAgent = { "node" ~
-             opening_brace ~
-             ("label" ~ string)? ~
-             ("customWorkspace" ~ string)? ~
-             closing_brace
-           }
-
 
 environmentDecl = { "environment" ~
                     opening_brace ~
@@ -90,10 +82,8 @@ envProperty = {
                 property
                 | credentialProperty
               }
-credentialProperty = { IDENT ~
-                        "=" ~
-                        "credentials" ~ opening_paren ~ string ~ closing_paren
-                      }
+
+failFast = { "failFast" ~ bool }
 
 func = { IDENT ~ opening_paren? ~ (kwargs | args | func)? ~ closing_paren? }
 
@@ -104,6 +94,23 @@ inputDecl = { "input" ~
              ("id" ~ string)? ~
               closing_brace
             }
+
+k8sAgent = { "kubernetes" ~
+             opening_brace ~
+             ("defaultContainer" ~ string)? ~
+             ("yaml" ~ string)? ~
+             ("yamlFile" ~ string)? ~
+             closing_brace
+           }
+
+nodeAgent = { "node" ~
+             opening_brace ~
+             ("label" ~ string)? ~
+             ("customWorkspace" ~ string)? ~
+             closing_brace
+           }
+
+
 
 optionsDecl = { "options" ~
                 opening_brace ~
@@ -159,14 +166,15 @@ stagesDecl = { "stages" ~
 
 stage = { "stage(" ~ string ~ ")" ~
             opening_brace ~
-            whenDecl? ~
-            optionsDecl? ~
-            agentDecl? ~
-            environmentDecl? ~
-            inputDecl? ~
-            toolsDecl? ~
-            (stepsDecl | parallelDecl) ~
-            postDecl? ~
+            (whenDecl
+            | failFast
+            | optionsDecl
+            | agentDecl
+            | environmentDecl
+            | inputDecl
+            | toolsDecl
+            | (stepsDecl | parallelDecl | stagesDecl)
+            | postDecl)* ~
             closing_brace
         }
 
