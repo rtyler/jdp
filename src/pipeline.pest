@@ -239,7 +239,7 @@ whenBeforeInput = { "beforeInput" ~ bool }
 whenBeforeAgent = { "beforeAgent" ~ bool }
 whenBeforeOptions = { "beforeOptions" ~ bool }
 whenBranch = { "branch" ~ string }
-whenCondition = { whenExpression | whenBranch | whenEnvironment | whenTriggered }
+whenCondition = { whenExpression | whenBranch | whenEnvironment | whenTag | whenTriggered }
 whenDecl = { "when" ~
                 opening_brace ~
                 (whenQualifiers | whenPredicate | whenCondition)+ ~
@@ -250,6 +250,7 @@ whenExpression = { "expression" ~ opening_brace ~ (!closing_brace ~ ANY)* ~ clos
 whenNot = { "not" ~ opening_brace ~ whenCondition+ ~ closing_brace }
 whenPredicate = { whenNot | whenAll | whenAny }
 whenQualifiers = { whenBeforeInput | whenBeforeOptions | whenBeforeAgent }
+whenTag = { "tag" ~ string }
 whenTriggered = { "triggeredBy" ~ string }
 ///////////////////////////////////////
 
