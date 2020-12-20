@@ -257,8 +257,11 @@ pipeline {
             Rule::stepsDecl,
             r#"steps {
                 deleteDir()
-            }"#)
-        .unwrap().next().unwrap();
+            }"#,
+        )
+        .unwrap()
+        .next()
+        .unwrap();
     }
 
     #[test]
@@ -276,8 +279,11 @@ pipeline {
                         }
                     }
                 }
-            }"#)
-        .unwrap().next().unwrap();
+            }"#,
+        )
+        .unwrap()
+        .next()
+        .unwrap();
     }
 
     /*
