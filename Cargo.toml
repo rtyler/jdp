@@ -3,6 +3,11 @@ name = "jdp"
 version = "0.1.1"
 authors = ["R. Tyler Croy <rtyler@brokenco.de>"]
 edition = "2018"
+description = "A Rust-native parser for Jenkins Declarative Pipeline"
+homepage = "https://github.com/rtyler/jdp"
+repository = "https://github.com/rtyler/jdp"
+license = "LGPL-3.0+"
+keywords = ["jenkins", "pipeline"]
 
 
 [lib]
