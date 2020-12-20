@@ -39,12 +39,58 @@ fn main() {
 
     match opts.command.unwrap() {
         Command::Check(checkopts) => {
-            println!("Checking: {}", checkopts.file.as_path().display());
+            if let Err(error) = parse_file(&checkopts.file) {
+                use pest::error::ErrorVariant;
+                use pest::error::LineColLocation::{Pos, Span};
+                use std::fs::File;
+                use std::io::{BufRead, BufReader};
 
-            let result = parse_file(&checkopts.file);
+                let file = File::open(&checkopts.file).expect("Failed to read the file again?");
+                let lines: Vec<String> = BufReader::new(file).lines().map(|l| l.unwrap()).collect();
 
-            if result.is_err() {
-                println!("Failed to parse!: {:#?}", result);
+                let filename = checkopts.file.as_path().to_string_lossy();
+                println!("\n{}", filename);
+                for _ in 0..filename.len() {
+                    print!("-");
+                }
+                println!("");
+
+                match error.line_col {
+                    Pos((line, column)) => {
+                        let start_line = std::cmp::max(0, line - 4);
+
+                        for n in start_line..line {
+                            println!("{}: {}", n, lines[n]);
+                        }
+                        // Just a little spacer for the error
+                        print!("  ");
+                        for _ in 0..column {
+                            print!("-");
+                        }
+                        println!("^");
+                    }
+                    Span(start, end) => {
+                        let start_line = std::cmp::max(0, start.0 - 4);
+                        for n in start_line..start.0 {
+                            println!("{}: {}", n, lines[n]);
+                        }
+                        // Just a little spacer for the error
+                        print!("  ");
+                        for _ in 0..(end.1 - 2) {
+                            print!("-");
+                        }
+                        println!("^");
+                    }
+                }
+
+                match error.variant {
+                    ErrorVariant::CustomError { message } => {
+                        println!("\nFail: {}", message);
+                    }
+                    _ => {
+                        println!("\nFailed to parse: missing required syntax");
+                    }
+                }
                 std::process::exit(1);
             } else {
                 println!("Looks valid! Great work!");
