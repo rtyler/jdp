@@ -251,6 +251,35 @@ pipeline {
         .unwrap().next().unwrap();
     }
 
+    #[test]
+    fn parse_steps_with_parens() {
+        let _s = PipelineParser::parse(
+            Rule::stepsDecl,
+            r#"steps {
+                deleteDir()
+            }"#)
+        .unwrap().next().unwrap();
+    }
+
+    #[test]
+    fn parse_script_step_nesting() {
+        let _s = PipelineParser::parse(
+            Rule::stepsDecl,
+            r#"steps {
+                script {
+                    withAnt(installation: 'ant-latest') {
+                        if (isUnix()) {
+                            sh 'ant info'
+                        }
+                        else {
+                            bat 'ant info'
+                        }
+                    }
+                }
+            }"#)
+        .unwrap().next().unwrap();
+    }
+
     /*
      * I put a step in your step so you can step while you step
      */

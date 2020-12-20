@@ -148,12 +148,11 @@ postBlock = {
 
 scriptStep = { "script" ~ opening_brace ~ groovy ~ closing_brace }
 groovy = {
-        (
+            (
             // Handle nested structures
-            (opening_brace ~ groovy ~ closing_brace)? ~
-            !(closing_brace) ~
-            ANY
-        )*
+            (opening_brace ~ groovy ~ closing_brace)
+            | (!closing_brace ~ ANY)
+            )*
          }
 
 stagesDecl = { "stages" ~
@@ -184,7 +183,7 @@ stepsDecl = { "steps" ~
 step_args = _{ args | kwargs | array_args | map_args }
 // A simple step can be invoked with parenthesis or without
 simple_step = _{ IDENT ~
-                ((opening_paren ~ step_args ~ closing_paren) | step_args) ~
+                ((opening_paren ~ step_args? ~ closing_paren) | step_args) ~
                 // This allows for really gross abusive chaining of Groovy
                 // functionality off the end of a step invocation
                 ("." ~ simple_step)*
