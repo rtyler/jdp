@@ -5,6 +5,7 @@ extern crate pest_derive;
 use pest::error::Error as PestError;
 use pest::error::ErrorVariant;
 use pest::Parser;
+use pest::iterators::Pairs;
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -41,6 +42,54 @@ pub fn parse_file(path: &PathBuf) -> Result<(), pest::error::Error<Rule>> {
     }
 }
 
+/**
+ * Make sure that the stage has the required directives, otherwise throw
+ * out a CustomError
+ */
+fn parse_stage(parser: &mut Pairs<Rule>, span: pest::Span) -> Result<(), PestError<Rule>> {
+    let mut met_requirements = false;
+
+    while let Some(parsed) = parser.next() {
+        match parsed.as_rule() {
+            Rule::stepsDecl => {
+                met_requirements = true;
+            },
+            Rule::parallelDecl => {
+                met_requirements = true;
+            },
+            Rule::stagesDecl => {
+                met_requirements = true;
+                parse_stages(&mut parsed.into_inner())?;
+            }
+            _ => {},
+        }
+    }
+
+    if ! met_requirements {
+        Err(PestError::new_from_span(
+                ErrorVariant::CustomError {
+                    message: "A stage must have either steps{}, parallel{}, or nested stages {}".to_string(),
+                }, span
+            ))
+    }
+    else {
+        Ok(())
+    }
+}
+
+fn parse_stages(parser: &mut Pairs<Rule>) -> Result<(), PestError<Rule>> {
+    while let Some(parsed) = parser.next() {
+        match parsed.as_rule() {
+            Rule::stage => {
+                let span = parsed.as_span();
+                parse_stage(&mut parsed.into_inner(), span)?;
+            },
+            _ => {},
+        }
+    }
+    Ok(())
+}
+
 pub fn parse_pipeline_string(buffer: &str) -> Result<(), PestError<Rule>> {
     let mut parser = PipelineParser::parse(Rule::pipeline, buffer)?;
 
@@ -70,6 +119,7 @@ pub fn parse_pipeline_string(buffer: &str) -> Result<(), PestError<Rule>> {
                     ));
                 }
                 stages = true;
+                parse_stages(&mut parsed.into_inner())?;
             }
             _ => {}
         }
@@ -115,7 +165,8 @@ mod tests {
     fn simple_validation() {
         let _pipeline = PipelineParser::parse(
             Rule::pipeline,
-            r#"
+            r#"#!/usr/bin/env groovy
+
 pipeline {
     agent any 
 

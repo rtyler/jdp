@@ -2,9 +2,8 @@
 // This PEG file strives to capture as much of the declarative
 // pipeline syntax as possible
 //
-pipeline = _{ SOI ~ shebang? ~
-                    (library | defs)* ~
-                    "pipeline" ~
+pipeline = _{ SOI ~  preceeding_junk? ~
+                    pipeline_start ~
                     opening_brace ~
                     // I am pretty sure this grammar is wrong and there has to
                     // a better way to allow these declarations anywhere within
@@ -24,17 +23,12 @@ pipeline = _{ SOI ~ shebang? ~
                     )*
                     ~
                     closing_brace ~
+                    ending_junk? ~
                     EOI }
 
-// XXX: Why won't this work!
-//shebang = _{ "#!" ~ (!NEWLINE ~ ANY)* }
-shebang = _{ "#!groovy" }
-// NOTE: This is currenlty only allowing applying the library annotation onto
-// `_` which is a convention for shared libraries, but technically the
-// annotation can be applied to just about any symbol
-library = { "@" ~ "Library" ~ opening_paren ~ string ~ closing_paren ~ "_" }
-// Allow wacky floating variable declarations
-defs = _{ "def" ~ IDENT }
+pipeline_start = _{ "pipeline" }
+preceeding_junk = { (!pipeline_start ~ ANY)* }
+ending_junk = { ANY* }
 
 agentDecl = { "agent" ~
               ("any"
@@ -50,13 +44,11 @@ agentBlock = {
                 | ("label" ~ string)) ~
                 closing_brace
              }
-k8sAgent = { "kubernetes" ~
-             opening_brace ~
-             ("defaultContainer" ~ string)? ~
-             ("yaml" ~ string)? ~
-             ("yamlFile" ~ string)? ~
-             closing_brace
-           }
+
+credentialProperty = { IDENT ~
+                        "=" ~
+                        "credentials" ~ opening_paren ~ string ~ closing_paren
+                      }
 dockerAgent = { "docker" ~
              opening_brace ~
              ("reuseNode" ~ bool)? ~
@@ -68,6 +60,7 @@ dockerAgent = { "docker" ~
              ("customWorkspace" ~ string)? ~
              closing_brace
            }
+
 dockerfileAgent = { "dockerfile" ~
              opening_brace ~
              ("reuseNode" ~ bool)? ~
@@ -79,13 +72,6 @@ dockerfileAgent = { "dockerfile" ~
              ("customWorkspace" ~ string)? ~
              closing_brace
            }
-nodeAgent = { "node" ~
-             opening_brace ~
-             ("label" ~ string)? ~
-             ("customWorkspace" ~ string)? ~
-             closing_brace
-           }
-
 
 environmentDecl = { "environment" ~
                     opening_brace ~
@@ -96,10 +82,8 @@ envProperty = {
                 property
                 | credentialProperty
               }
-credentialProperty = { IDENT ~
-                        "=" ~
-                        "credentials" ~ opening_paren ~ string ~ closing_paren
-                      }
+
+failFast = { "failFast" ~ bool }
 
 func = { IDENT ~ opening_paren? ~ (kwargs | args | func)? ~ closing_paren? }
 
@@ -110,6 +94,23 @@ inputDecl = { "input" ~
              ("id" ~ string)? ~
               closing_brace
             }
+
+k8sAgent = { "kubernetes" ~
+             opening_brace ~
+             ("defaultContainer" ~ string)? ~
+             ("yaml" ~ string)? ~
+             ("yamlFile" ~ string)? ~
+             closing_brace
+           }
+
+nodeAgent = { "node" ~
+             opening_brace ~
+             ("label" ~ string)? ~
+             ("customWorkspace" ~ string)? ~
+             closing_brace
+           }
+
+
 
 optionsDecl = { "options" ~
                 opening_brace ~
@@ -165,14 +166,15 @@ stagesDecl = { "stages" ~
 
 stage = { "stage(" ~ string ~ ")" ~
             opening_brace ~
-            whenDecl? ~
-            optionsDecl? ~
-            agentDecl? ~
-            environmentDecl? ~
-            inputDecl? ~
-            toolsDecl? ~
-            (stepsDecl | parallelDecl) ~
-            postDecl? ~
+            (whenDecl
+            | failFast
+            | optionsDecl
+            | agentDecl
+            | environmentDecl
+            | inputDecl
+            | toolsDecl
+            | (stepsDecl | parallelDecl | stagesDecl)
+            | postDecl)* ~
             closing_brace
         }
 
