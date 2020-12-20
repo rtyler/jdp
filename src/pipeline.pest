@@ -166,6 +166,7 @@ stagesDecl = { "stages" ~
 stage = { "stage(" ~ string ~ ")" ~
             opening_brace ~
             whenDecl? ~
+            optionsDecl? ~
             agentDecl? ~
             environmentDecl? ~
             inputDecl? ~
