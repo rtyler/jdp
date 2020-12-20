@@ -2,9 +2,8 @@
 // This PEG file strives to capture as much of the declarative
 // pipeline syntax as possible
 //
-pipeline = _{ SOI ~ shebang? ~
-                    (library | defs)* ~
-                    "pipeline" ~
+pipeline = _{ SOI ~  preceeding_junk? ~
+                    pipeline_start ~
                     opening_brace ~
                     // I am pretty sure this grammar is wrong and there has to
                     // a better way to allow these declarations anywhere within
@@ -24,17 +23,12 @@ pipeline = _{ SOI ~ shebang? ~
                     )*
                     ~
                     closing_brace ~
+                    ending_junk? ~
                     EOI }
 
-// XXX: Why won't this work!
-//shebang = _{ "#!" ~ (!NEWLINE ~ ANY)* }
-shebang = _{ "#!groovy" }
-// NOTE: This is currenlty only allowing applying the library annotation onto
-// `_` which is a convention for shared libraries, but technically the
-// annotation can be applied to just about any symbol
-library = { "@" ~ "Library" ~ opening_paren ~ string ~ closing_paren ~ "_" }
-// Allow wacky floating variable declarations
-defs = _{ "def" ~ IDENT }
+pipeline_start = _{ "pipeline" }
+preceeding_junk = { (!pipeline_start ~ ANY)* }
+ending_junk = { ANY* }
 
 agentDecl = { "agent" ~
               ("any"

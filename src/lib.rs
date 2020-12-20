@@ -115,7 +115,8 @@ mod tests {
     fn simple_validation() {
         let _pipeline = PipelineParser::parse(
             Rule::pipeline,
-            r#"
+            r#"#!/usr/bin/env groovy
+
 pipeline {
     agent any 
 
