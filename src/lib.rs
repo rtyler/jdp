@@ -238,17 +238,33 @@ pipeline {
     }
 
     #[test]
-    fn parse_script_step() {
+    fn parse_steps_with_triple_singles() {
         let _s = PipelineParser::parse(
             Rule::stepsDecl,
             r#"steps {
-                script {
-                    def taskOutput = readJSON file: 'task-output.dev.json'
-                    def revision = taskOutput.taskDefinition.revision
-                    sh "aws ecs update-service --cluster ${CLUSTER} --service ${SERVICE} --task-definition ${FAMILY}:${revision}"
-                }
-            }"#)
-        .unwrap().next().unwrap();
+                sh '''
+                    env
+                '''
+            }"#,
+        )
+        .unwrap()
+        .next()
+        .unwrap();
+    }
+
+    #[test]
+    fn parse_steps_with_triple_doubles() {
+        let _s = PipelineParser::parse(
+            Rule::stepsDecl,
+            r#"steps {
+                sh """
+                    env
+                """
+            }"#,
+        )
+        .unwrap()
+        .next()
+        .unwrap();
     }
 
     #[test]
@@ -262,6 +278,20 @@ pipeline {
         .unwrap()
         .next()
         .unwrap();
+    }
+
+    #[test]
+    fn parse_script_step() {
+        let _s = PipelineParser::parse(
+            Rule::stepsDecl,
+            r#"steps {
+                script {
+                    def taskOutput = readJSON file: 'task-output.dev.json'
+                    def revision = taskOutput.taskDefinition.revision
+                    sh "aws ecs update-service --cluster ${CLUSTER} --service ${SERVICE} --task-definition ${FAMILY}:${revision}"
+                }
+            }"#)
+        .unwrap().next().unwrap();
     }
 
     #[test]
