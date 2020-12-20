@@ -203,10 +203,12 @@ block_step = _{ IDENT ~
 checkout_step = { "checkout" ~ "scm" }
 step = { checkout_step | block_step | simple_step }
 
-arg = _{ string | bool | number | magic_vars | array_args | map_args | step }
-args = { (arg ~ COMMA?)+ }
-kwargs = _{ (kwarg ~ COMMA?)+ }
-kwarg = { IDENT~ ":" ~ arg }
+value = _{ string | bool | number | magic_vars }
+arg = _{ value | array_args | map_args | step }
+args = { (arg ~ comma?)+ }
+
+kwarg = { IDENT ~ ":" ~ arg }
+kwargs = _{ (kwarg ~ comma?)+ }
 
 map_args = _{ opening_brack ~ kwargs ~ closing_brack }
 // This syntax is some Groovy invocation magic that I'm not sure I fully
@@ -215,8 +217,8 @@ array_args = _{ opening_brack ~ args ~ closing_brack }
 property = { IDENT ~ "=" ~ string }
 
 // These are magic variables that are legitimate to use in "declarative"
-// pipeline
-magic_vars = _{ envRef | scmRef | paramsRef }
+// pipeline. Supports concatenation
+magic_vars = _{ (envRef | scmRef | paramsRef | "WORKSPACE") ~ (plus ~ (string | magic_vars))? }
 envRef = { "env." ~ nestedRef }
 scmRef = { "scm." ~ nestedRef }
 paramsRef = { "params." ~ nestedRef }
@@ -260,7 +262,7 @@ whenTriggered = { "triggeredBy" ~ string }
 
 IDENT = @{ (ASCII_ALPHA | "$") ~ (ASCII_ALPHANUMERIC | "_")* }
 
-string        = ${ (single_quoted | double_quoted) }
+string        = { (single_quoted | double_quoted) ~ (plus ~ (magic_vars | string))* }
 single_quoted = ${ single_quote ~ inner_single_str ~ single_quote }
 double_quoted = ${ quote ~ inner_double_str ~ quote }
 
@@ -282,11 +284,12 @@ opening_paren       = { "(" }
 closing_paren       = { ")" }
 opening_brack       = { "[" }
 closing_brack       = { "]" }
+plus = @{ "+" }
 
 number = @{ '0'..'9'+ }
 integer = @{ number | "-" ~ "0"* ~ '1'..'9' ~ number? }
 
-COMMA = @{ "," }
+comma = @{ "," }
 bool = @{ (TRUE | FALSE) }
 TRUE = { "true" }
 FALSE = { "false" }

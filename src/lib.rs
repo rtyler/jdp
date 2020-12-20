@@ -267,6 +267,38 @@ pipeline {
         .unwrap();
     }
 
+    /*
+     * I kind of cannot believe that this is legitimate Declarative but it
+     * apparently is!
+     */
+    #[test]
+    fn parse_string_with_concatenation() {
+        let _s = PipelineParser::parse(
+            Rule::stepsDecl,
+            r#"steps {
+                echo 'Hello world: ' + WORKSPACE
+            }"#
+        )
+        .unwrap()
+        .next()
+        .unwrap();
+    }
+
+    #[test]
+    fn parse_step_with_symbol_concatenation() {
+        let _s = PipelineParser::parse(
+            Rule::stepsDecl,
+            r#"steps {
+                ws(dir: WORKSPACE + '/foo') {
+                    sh 'pwd'
+                }
+            }"#
+        )
+        .unwrap()
+        .next()
+        .unwrap();
+    }
+
     #[test]
     fn parse_steps_with_parens() {
         let _s = PipelineParser::parse(
