@@ -3,7 +3,7 @@
 // pipeline syntax as possible
 //
 pipeline = _{ SOI ~ shebang? ~
-                    (library)* ~
+                    (library | defs)* ~
                     "pipeline" ~
                     opening_brace ~
                     // I am pretty sure this grammar is wrong and there has to
@@ -33,6 +33,8 @@ shebang = _{ "#!groovy" }
 // `_` which is a convention for shared libraries, but technically the
 // annotation can be applied to just about any symbol
 library = { "@" ~ "Library" ~ opening_paren ~ string ~ closing_paren ~ "_" }
+// Allow wacky floating variable declarations
+defs = _{ "def" ~ IDENT }
 
 agentDecl = { "agent" ~
               ("any"
