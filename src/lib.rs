@@ -277,7 +277,7 @@ pipeline {
             Rule::stepsDecl,
             r#"steps {
                 echo 'Hello world: ' + WORKSPACE
-            }"#
+            }"#,
         )
         .unwrap()
         .next()
@@ -292,7 +292,7 @@ pipeline {
                 ws(dir: WORKSPACE + '/foo') {
                     sh 'pwd'
                 }
-            }"#
+            }"#,
         )
         .unwrap()
         .next()
