@@ -1,6 +1,6 @@
 [package]
 name = "jdp"
-version = "0.2.2"
+version = "0.2.3"
 authors = ["R. Tyler Croy <rtyler@brokenco.de>"]
 edition = "2018"
 description = "A Rust-native parser for Jenkins Declarative Pipeline"

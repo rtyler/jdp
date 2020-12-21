@@ -1,0 +1,15 @@
+// https://github.com/jenkinsci/blueocean-plugin/blob/master/acceptance-tests/src/test/resources/io/blueocean/ath/offline/pipeline/UpstreamLinkTest/Jenkinsfile
+
+pipeline {
+  agent any
+  triggers {
+    upstream(upstreamProjects: 'upstreamJob', threshold: hudson.model.Result.SUCCESS)
+  }
+  stages {
+    stage('Example') {
+      steps {
+        echo 'Hello World'
+      }
+    }
+  }
+}

@@ -224,7 +224,10 @@ property = { IDENT ~ "=" ~ string }
 
 // These are magic variables that are legitimate to use in "declarative"
 // pipeline. Supports concatenation
-magic_vars = _{ (envRef | scmRef | paramsRef | "WORKSPACE") ~ (plus ~ (string | magic_vars))? }
+magic_vars = _{ (envRef | scmRef | paramsRef | hudsonRef | "WORKSPACE") ~ (plus ~ (string | magic_vars))? }
+// This is required for some step invocations where ABI objects must be
+// referenced
+hudsonRef = { "hudson." ~ nestedRef }
 envRef = { "env." ~ nestedRef }
 scmRef = { "scm." ~ nestedRef }
 paramsRef = { "params." ~ nestedRef }
