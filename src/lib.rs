@@ -4,8 +4,8 @@ extern crate pest_derive;
 
 use pest::error::Error as PestError;
 use pest::error::ErrorVariant;
-use pest::Parser;
 use pest::iterators::Pairs;
+use pest::Parser;
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -53,26 +53,27 @@ fn parse_stage(parser: &mut Pairs<Rule>, span: pest::Span) -> Result<(), PestErr
         match parsed.as_rule() {
             Rule::stepsDecl => {
                 met_requirements = true;
-            },
+            }
             Rule::parallelDecl => {
                 met_requirements = true;
-            },
+            }
             Rule::stagesDecl => {
                 met_requirements = true;
                 parse_stages(&mut parsed.into_inner())?;
             }
-            _ => {},
+            _ => {}
         }
     }
 
-    if ! met_requirements {
+    if !met_requirements {
         Err(PestError::new_from_span(
-                ErrorVariant::CustomError {
-                    message: "A stage must have either steps{}, parallel{}, or nested stages {}".to_string(),
-                }, span
-            ))
-    }
-    else {
+            ErrorVariant::CustomError {
+                message: "A stage must have either steps{}, parallel{}, or nested stages {}"
+                    .to_string(),
+            },
+            span,
+        ))
+    } else {
         Ok(())
     }
 }
@@ -83,8 +84,8 @@ fn parse_stages(parser: &mut Pairs<Rule>) -> Result<(), PestError<Rule>> {
             Rule::stage => {
                 let span = parsed.as_span();
                 parse_stage(&mut parsed.into_inner(), span)?;
-            },
-            _ => {},
+            }
+            _ => {}
         }
     }
     Ok(())
@@ -168,10 +169,10 @@ mod tests {
             r#"#!/usr/bin/env groovy
 
 pipeline {
-    agent any 
+    agent any
 
     stages {
-        stage('Build') { 
+        stage('Build') {
             steps {
                 sh 'ls -lah'
             }
@@ -450,6 +451,27 @@ pipeline {
                 sh 'echo DEV task definition:'
                 sh 'cat task-definition.dev.json'
             }"#,
+        )
+        .unwrap()
+        .next()
+        .unwrap();
+    }
+
+    /*
+     * More wacky but actually valid code
+     */
+    #[test]
+    fn parse_environment_with_embedded_steps() {
+        let _s = PipelineParser::parse(
+            Rule::environmentDecl,
+            r#"environment {
+                // Using returnStdout
+                CC = """${sh(
+                        returnStdout: true,
+                        script: 'echo "clang"'
+                    )}"""
+                }
+            "#,
         )
         .unwrap()
         .next()

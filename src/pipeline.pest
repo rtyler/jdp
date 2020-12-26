@@ -140,7 +140,7 @@ postDecl = { "post" ~
              (postBlock+) ~
              closing_brace
            }
-postBlock = { 
+postBlock = {
             ("always"
             | "changed"
             | "fixed"
@@ -271,12 +271,20 @@ whenTriggered = { "triggeredBy" ~ string }
 
 IDENT = @{ (ASCII_ALPHA | "$") ~ (ASCII_ALPHANUMERIC | "_")* }
 
-string        = { (single_quoted | double_quoted) ~ (plus ~ (magic_vars | string))* }
+string        = { (triple_single_quoted | single_quoted | triple_double_quoted | double_quoted) ~ (plus ~ (magic_vars | string))* }
 single_quoted = ${ single_quote ~ inner_single_str ~ single_quote }
-double_quoted = ${ quote ~ inner_double_str ~ quote }
+triple_single_quoted = ${ triple_single_quote ~ inner_triple_single_str ~ triple_single_quote }
+
+double_quoted = ${ (quote ~ inner_double_str ~ quote) }
+triple_double_quoted = ${ triple_quote ~ inner_triple_double_str ~ triple_quote }
+
+triple_single_quote = ${ single_quote ~ single_quote ~ single_quote }
+triple_quote = ${ quote ~ quote ~ quote }
 
 inner_single_str = @{ (!("'" | "\\") ~ ANY)* ~ (escape ~ inner_single_str)? }
+inner_triple_single_str = @{ (!("'''" | "\\") ~ ANY)* ~ (escape ~ inner_triple_single_str)? }
 inner_double_str = @{ (!("\"" | "\\") ~ ANY)* ~ (escape ~ inner_double_str)? }
+inner_triple_double_str = @{ (!("\"\"\"" | "\\") ~ ANY)* ~ (escape ~ inner_triple_double_str)? }
 inner_chr = @{ escape | ANY }
 escape    = @{ "\\" ~ ("\"" | "\\" | "r" | "n" | "t" | "0" | "'" | code | unicode) }
 code      = @{ "x" ~ hex_digit{2} }
