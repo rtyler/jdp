@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate lazy_static;
 extern crate pest;
 #[macro_use]
 extern crate pest_derive;
@@ -6,6 +8,7 @@ use pest::error::Error as PestError;
 use pest::error::ErrorVariant;
 use pest::iterators::Pairs;
 use pest::Parser;
+use regex::Regex;
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -40,6 +43,76 @@ pub fn parse_file(path: &PathBuf) -> Result<(), pest::error::Error<Rule>> {
             ));
         }
     }
+}
+
+pub fn parse_pipeline_string(buffer: &str) -> Result<(), PestError<Rule>> {
+    if !is_declarative(buffer) {
+        return Err(PestError::new_from_pos(
+            ErrorVariant::CustomError {
+                message: "The buffer does not appear to be a Declarative Pipeline, I couldn't find pipeline { }".to_string(),
+            },
+            pest::Position::from_start(buffer),
+        ));
+    }
+
+    let mut parser = PipelineParser::parse(Rule::pipeline, buffer)?;
+    let mut agents = false;
+    let mut stages = false;
+
+    while let Some(parsed) = parser.next() {
+        match parsed.as_rule() {
+            Rule::agentDecl => {
+                if agents {
+                    return Err(PestError::new_from_span(
+                        ErrorVariant::CustomError {
+                            message: "Cannot have two top-level `agent` directives".to_string(),
+                        },
+                        parsed.as_span(),
+                    ));
+                }
+                agents = true;
+            }
+            Rule::stagesDecl => {
+                if stages {
+                    return Err(PestError::new_from_span(
+                        ErrorVariant::CustomError {
+                            message: "Cannot have two top-level `stages` directives".to_string(),
+                        },
+                        parsed.as_span(),
+                    ));
+                }
+                stages = true;
+                parse_stages(&mut parsed.into_inner())?;
+            }
+            _ => {}
+        }
+    }
+    /*
+     * Both agents and stages are required, the lack thereof is an error
+     */
+    if !agents || !stages {
+        let error = PestError::new_from_pos(
+            ErrorVariant::ParsingError {
+                positives: vec![],
+                negatives: vec![],
+            },
+            pest::Position::from_start(buffer),
+        );
+        return Err(error);
+    }
+
+    Ok(())
+}
+
+/**
+ * Run a quick sanity check to determine whether the given buffer appears to
+ * be a Declarative Pipeline or not.
+ */
+fn is_declarative(buffer: &str) -> bool {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"pipeline(\s+)?\{").expect("Failed to make regex");
+    }
+    RE.is_match(buffer)
 }
 
 /**
@@ -91,60 +164,35 @@ fn parse_stages(parser: &mut Pairs<Rule>) -> Result<(), PestError<Rule>> {
     Ok(())
 }
 
-pub fn parse_pipeline_string(buffer: &str) -> Result<(), PestError<Rule>> {
-    let mut parser = PipelineParser::parse(Rule::pipeline, buffer)?;
-
-    let mut agents = false;
-    let mut stages = false;
-
-    while let Some(parsed) = parser.next() {
-        match parsed.as_rule() {
-            Rule::agentDecl => {
-                if agents {
-                    return Err(PestError::new_from_span(
-                        ErrorVariant::CustomError {
-                            message: "Cannot have two top-level `agent` directives".to_string(),
-                        },
-                        parsed.as_span(),
-                    ));
-                }
-                agents = true;
-            }
-            Rule::stagesDecl => {
-                if stages {
-                    return Err(PestError::new_from_span(
-                        ErrorVariant::CustomError {
-                            message: "Cannot have two top-level `stages` directives".to_string(),
-                        },
-                        parsed.as_span(),
-                    ));
-                }
-                stages = true;
-                parse_stages(&mut parsed.into_inner())?;
-            }
-            _ => {}
-        }
-    }
-    /*
-     * Both agents and stages are required, the lack thereof is an error
-     */
-    if !agents || !stages {
-        let error = PestError::new_from_pos(
-            ErrorVariant::ParsingError {
-                positives: vec![],
-                negatives: vec![],
-            },
-            pest::Position::from_start(buffer),
-        );
-        return Err(error);
-    }
-
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /*
+     * This will test what parse_pipeline_string will do when faced with a
+     * Scripted Pipeline/
+     */
+    #[test]
+    fn is_declarative_with_scripted() {
+        assert_eq!(false, is_declarative("node { sh 'env' }"));
+    }
+
+    #[test]
+    fn is_declarative_with_declarative() {
+        assert!(is_declarative(
+            "pipeline { agent any stages { stage('Build') { steps { sh 'printenv' } } } }"
+        ));
+    }
+
+    /*
+     * This is just to help make sure the regex isn't too whitespace sensitive
+     */
+    #[test]
+    fn is_declarative_with_declarative_no_spaces() {
+        assert!(is_declarative(
+            "pipeline{ agent any stages { stage('Build') { steps { sh 'printenv' }}}}"
+        ));
+    }
 
     #[test]
     fn parse_string_single() {

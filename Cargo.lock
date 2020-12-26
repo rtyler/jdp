@@ -146,10 +146,12 @@ version = "0.2.3"
 dependencies = [
  "glob",
  "gumdrop",
+ "lazy_static",
  "log",
  "pest",
  "pest_derive",
  "pretty_env_logger",
+ "regex",
 ]
 
 [[package]]

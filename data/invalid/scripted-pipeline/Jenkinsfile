@@ -1,0 +1,6 @@
+node {
+    echo 'This is a scripted pipeline'
+
+    // with groovy
+    ['a','b'].each { echo it }
+}
