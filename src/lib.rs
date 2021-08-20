@@ -49,7 +49,6 @@ pub fn parse_graph_stages(path: &PathBuf) -> Result<(), PestError<Rule>> {
     use std::fs::File;
     use std::io::Read;
 
-
     match File::open(path) {
         Ok(mut file) => {
             let mut contents = String::new();
@@ -94,13 +93,13 @@ fn stage_graphs(buffer: &str) -> Result<Vec<&str>, PestError<Rule>> {
     fn get_stage_names(pairs: Pairs<Rule>) -> impl Iterator<Item = &str> + '_ {
         pairs.flat_map(|stage| {
             if let Rule::stage = stage.as_rule() {
-                if let Some(stage_name_span)  = stage.into_inner().next() {
+                if let Some(stage_name_span) = stage.into_inner().next() {
                     let stage_name = stage_name_span.as_str();
-                    return Some(&stage_name[1..stage_name.len()-1]);
+                    return Some(&stage_name[1..stage_name.len() - 1]);
                 }
                 return None;
             }
-            return None
+            return None;
         })
     }
 
@@ -112,16 +111,15 @@ fn stage_graphs(buffer: &str) -> Result<Vec<&str>, PestError<Rule>> {
             pest::Position::from_start(buffer),
         ));
     }
-    
+
     let parser = PipelineParser::parse(Rule::pipeline, buffer)?;
-    if let Some(a) = parser.flat_map(|parsed| {
-        match parsed.as_rule() {
-            Rule::stagesDecl => {
-                Some(get_stage_names(parsed.into_inner()))
-            }
-            _ => None
-        }
-    }).next() {
+    if let Some(a) = parser
+        .flat_map(|parsed| match parsed.as_rule() {
+            Rule::stagesDecl => Some(get_stage_names(parsed.into_inner())),
+            _ => None,
+        })
+        .next()
+    {
         return Ok(a.collect::<Vec<_>>());
     } else {
         return Err(PestError::new_from_pos(

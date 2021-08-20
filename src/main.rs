@@ -18,7 +18,7 @@ enum Command {
     #[options(help = "Validate the syntax of a Jenkinsfile")]
     Check(CheckOpts),
     #[options(help = "Print the stages graph of a Jenkinsfile")]
-    Graph(GraphOpts)
+    Graph(GraphOpts),
 }
 
 // Options accepted for the `make` command
@@ -37,7 +37,6 @@ struct GraphOpts {
     #[options(free, required, help = "Path to a Jenkinsfile")]
     file: std::path::PathBuf,
 }
-
 
 /// The number of lines of context to show for errors
 const LINES_OF_CONTEXT: usize = 4;
