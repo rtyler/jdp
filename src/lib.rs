@@ -45,6 +45,94 @@ pub fn parse_file(path: &PathBuf) -> Result<(), pest::error::Error<Rule>> {
     }
 }
 
+pub fn parse_graph_stages(path: &PathBuf) -> Result<(), PestError<Rule>> {
+    use std::fs::File;
+    use std::io::Read;
+
+
+    match File::open(path) {
+        Ok(mut file) => {
+            let mut contents = String::new();
+
+            if let Err(e) = file.read_to_string(&mut contents) {
+                return Err(PestError::new_from_pos(
+                    ErrorVariant::CustomError {
+                        message: format!("{}", e),
+                    },
+                    pest::Position::from_start(""),
+                ));
+            } else {
+                println!("{}", build_dot_file(stage_graphs(&contents)?));
+                Ok(())
+            }
+        }
+        Err(e) => {
+            return Err(PestError::new_from_pos(
+                ErrorVariant::CustomError {
+                    message: format!("{}", e),
+                },
+                pest::Position::from_start(""),
+            ));
+        }
+    }
+}
+
+fn build_dot_file<'a>(stages: Vec<&str>) -> String {
+    let nodes = stages.windows(2).fold("".to_string(), |acc, stage| {
+        let stage1 = stage[0];
+        let stage2 = stage[1];
+
+        if acc == "".to_string() {
+            return format!("\"{}\" -> \"{}\";", stage1, stage2);
+        }
+        format!("{}\"{}\" -> \"{}\";", acc, stage1, stage2)
+    });
+    format!(r#"digraph {{ {} }}"#, nodes)
+}
+
+fn stage_graphs(buffer: &str) -> Result<Vec<&str>, PestError<Rule>> {
+    fn get_stage_names(pairs: Pairs<Rule>) -> impl Iterator<Item = &str> + '_ {
+        pairs.flat_map(|stage| {
+            if let Rule::stage = stage.as_rule() {
+                if let Some(stage_name_span)  = stage.into_inner().next() {
+                    let stage_name = stage_name_span.as_str();
+                    return Some(&stage_name[1..stage_name.len()-1]);
+                }
+                return None;
+            }
+            return None
+        })
+    }
+
+    if !is_declarative(buffer) {
+        return Err(PestError::new_from_pos(
+            ErrorVariant::CustomError {
+                message: "The buffer does not appear to be a Declarative Pipeline, I couldn't find pipeline { }".to_string(),
+            },
+            pest::Position::from_start(buffer),
+        ));
+    }
+    
+    let parser = PipelineParser::parse(Rule::pipeline, buffer)?;
+    if let Some(a) = parser.flat_map(|parsed| {
+        match parsed.as_rule() {
+            Rule::stagesDecl => {
+                Some(get_stage_names(parsed.into_inner()))
+            }
+            _ => None
+        }
+    }).next() {
+        return Ok(a.collect::<Vec<_>>());
+    } else {
+        return Err(PestError::new_from_pos(
+            ErrorVariant::CustomError {
+                message: "I couldn't find stages { }".to_string(),
+            },
+            pest::Position::from_start(buffer),
+        ));
+    }
+}
+
 pub fn parse_pipeline_string(buffer: &str) -> Result<(), PestError<Rule>> {
     if !is_declarative(buffer) {
         return Err(PestError::new_from_pos(
@@ -524,5 +612,21 @@ pipeline {
         .unwrap()
         .next()
         .unwrap();
+    }
+
+    #[test]
+    fn test_stage_graphs() {
+        assert_eq!(
+            stage_graphs("pipeline{ agent any stages { stage('Build') { steps { sh 'printenv' }} stage('Test') { steps { sh 'cargo test' } } }}").unwrap(),
+            vec!["Build", "Test"]
+        )
+    }
+
+    #[test]
+    fn test_build_dot_file() {
+        assert_eq!(
+            build_dot_file(stage_graphs("pipeline{ agent any stages { stage('Build') { steps { sh 'printenv' }} stage('Test') { steps { sh 'cargo test' } } stage('Publish') { steps { sh 'cargo publish' } } }}").unwrap()),
+            r#"digraph { "Build" -> "Test";"Test" -> "Publish"; }"#
+        )
     }
 }
