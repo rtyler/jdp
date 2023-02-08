@@ -17,11 +17,21 @@ struct JdpOptions {
 enum Command {
     #[options(help = "Validate the syntax of a Jenkinsfile")]
     Check(CheckOpts),
+    #[options(help = "Print the stages graph of a Jenkinsfile")]
+    Graph(GraphOpts),
 }
 
 // Options accepted for the `make` command
 #[derive(Debug, Options)]
 struct CheckOpts {
+    #[options(help = "print help message")]
+    help: bool,
+    #[options(free, required, help = "Path to a Jenkinsfile")]
+    file: std::path::PathBuf,
+}
+
+#[derive(Debug, Options)]
+struct GraphOpts {
     #[options(help = "print help message")]
     help: bool,
     #[options(free, required, help = "Path to a Jenkinsfile")]
@@ -108,6 +118,11 @@ fn main() {
                 std::process::exit(1);
             } else {
                 println!("Looks valid! Great work!");
+            }
+        }
+        Command::Graph(graphopts) => {
+            if let Err(_) = parse_graph_stages(&graphopts.file) {
+                std::process::exit(1);
             }
         }
     }
