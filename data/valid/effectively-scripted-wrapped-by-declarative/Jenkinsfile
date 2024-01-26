@@ -1,0 +1,246 @@
+#!/usr/bin/env groovy
+
+// Jenkinsfile-rescan-project-labels
+// (C) 2019 - 2021 by Jim Klimov <jimklimov@gmail.com>
+// This Jenkinsfile makes-believe it is a Declarative pipeline for
+// the sake of commonality of our pipeline scripts (build args,
+// various options and stuff), but in fact this is a scripted
+// pipeline most of the way.
+// Its job is to find all defined Jenkins jobs and inspect whether
+// some have no labels defined and so can fall onto random unprepared
+// workers.
+
+// Note: A lot of methods below must be approved by Jenkins admin!
+// To do that, "replay" the job and edit the script in Web-GUI to
+// remove try lines and catch blocks, and replay it time and again
+// until all method signatures have been submitted for approval and
+// approved in $JENKINS_URL/scriptApproval/ by an admin, one by one.
+
+import jenkins.model.*
+import hudson.model.*
+import hudson.util.PersistedList
+import jenkins.branch.*
+
+@NonCPS
+def inspectJobs(String verbose, String regexSubset, String regexExclude, String regexLabels) {
+    def jobs = Jenkins.instance.getAllItems()
+    def hitlist = []
+    boolean verdict = true
+
+    jobs.each { j ->
+        if (j instanceof com.cloudbees.hudson.plugins.folder.Folder) {
+            if (verbose.equals("true")) {
+                echo 'SKIP-INSPECTION: Ignoring JOB which is a com.cloudbees.hudson.plugins.folder.Folder : ' + j.fullName
+            }
+            return
+        }
+        if (j instanceof jenkins.branch.OrganizationFolder) {
+            if (verbose.equals("true")) {
+                echo 'SKIP-INSPECTION: Ignoring JOB which is a jenkins.branch.OrganizationFolder : ' + j.fullName
+            }
+            return
+        }
+
+        if ( ! regexSubset.equals("") ) {
+            if ( ! ( j.fullName =~ regexSubset ) ) {
+                if (verbose.equals("true")) {
+                    echo "SKIP-INSPECTION: Ignoring JOB whose name '${j.fullName}' did not match specified regex of interesting jobs to inspect '${regexSubset}'"
+                }
+                return;
+            }
+        }
+
+        if ( ! regexExclude.equals("") ) {
+            if ( j.fullName =~ regexExclude ) {
+                if (verbose.equals("true")) {
+                    echo "SKIP-INSPECTION: Ignoring JOB whose name '${j.fullName}' matched specified regex of jobs to exclude from inspect '${regexExclude}'"
+                }
+                return;
+            }
+        }
+
+        String jobLabelString
+        String jobStatus
+        try {
+            jobStatus = (j.disabled ? "DISABLED" : "ENABLED" )
+        } catch (Exception eDisabled) {
+            echo "WARNING: failed to query whether the job '${j.fullName}' is disabled, so inspecting it just in case: " + eDisabled
+            jobStatus = "Status:N/A"
+        }
+
+        try {
+            jobLabelString = j.getAssignedLabelString()
+        } catch (Exception e) {
+            jobLabelString = "N/A"
+
+            if (j instanceof org.jenkinsci.plugins.workflow.job.WorkflowJob) {
+                try {
+                    jobLabelString = j.getAssignedLabel()
+                } catch (Exception eLabelPipeline) {
+                    jobLabelString = "N/A"
+                }
+                if (verbose.equals("true")) {
+                    if (jobLabelString.equals("N/A")) {
+                        echo "WARNING : Failed to query labels of a org.jenkinsci.plugins.workflow.job.WorkflowJob : " + j.fullName
+                    } else if (jobLabelString.equals("master")) {
+/* // https://github.com/jenkinsci/workflow-job-plugin/blob/master/src/main/java/org/jenkinsci/plugins/workflow/job/WorkflowJob.java#L402
+                        Jenkins j = Jenkins.getInstanceOrNull();
+                        if (j == null) {
+                            return null;
+                        }
+                        return j.getSelfLabel(); // == "master" for us
+*/
+                        echo "WARNING : Failed to query real labels of a org.jenkinsci.plugins.workflow.job.WorkflowJob - it only reports the pipeline default handling node : " + j.fullName
+                    }
+
+                    echo "Pipeline job " + j.fullName + " has labels: " + jobLabelString
+
+                    try {
+                        j.getSubTasks().each() { t ->
+                            // Note: in practice I only saw one subtask per pipeline job, named as itself and also assigned to "master"
+                            try {
+                                echo "Pipeline job " + j.fullName + " also has subtask: " + t + " with label(s): '" + t.getAssignedLabel() + "'"
+                            } catch (Exception ePipelineSubtaskItem) {
+                                println ePipelineSubtaskItem
+                            }
+                        }
+                    } catch (Exception ePipelineSubtaskList) {
+                        println ePipelineSubtaskList
+                    }
+                }
+            }
+
+            if (j instanceof org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject) {
+                // an MBP
+                if (verbose.equals("true")) {
+                    echo "WARNING : Failed to query labels of a MBP org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject : " + j.fullName
+                }
+            }
+
+            if (j instanceof hudson.model.FreeStyleProject) {
+                if (verbose.equals("true")) {
+                    echo "WARNING : Failed to query labels of a hudson.model.FreeStyleProject : " + j.fullName
+                }
+            }
+
+            if (j instanceof com.tikal.jenkins.plugins.multijob.MultiJobProject) {
+                if (verbose.equals("true")) {
+                    echo "WARNING : Failed to query labels of a com.tikal.jenkins.plugins.multijob.MultiJobProject : " + j.fullName
+                }
+            }
+        }
+
+        //if ( jobLabelString == null || jobLabelString.equals("") || jobLabelString.equals("N/A")  ) return
+        if ( jobLabelString.equals("N/A") ) return
+        if ( regexLabels.equals("") ) {
+            if ( jobLabelString != null && !jobLabelString.equals(null) && !jobLabelString.equals("") ) return
+        } else {
+            if ( ! ( jobLabelString =~ regexLabels ) ) {
+                if (verbose.equals("true")) {
+                    echo "SKIP-INSPECTION: Ignoring JOB '${j.fullName}' whose labels '${jobLabelString}' did not match specified regex of interesting job labels to complain about '${regexLabels}'"
+                }
+                return;
+            }
+        }
+        if ( !j.disabled && j.buildable ) {
+            verdict = false
+            hitlist << j.fullName
+        }
+        println jobStatus + ":\t'" + j.fullName + "' \tLABEL(S): '" + jobLabelString + "' \tCFGURL: " + j.getAbsoluteUrl() + "configure"
+    }
+
+    // false means some jobs need a fix
+    return [verdict, hitlist]
+}
+
+
+// A declarative pipeline shiny wrapper (we need it
+// for common ways of autosetup and params, mostly)
+pipeline {
+    options {
+/*
+        // There is no such option yet, sadly:
+        description("This job runs regularly to find jobs that do not have a label assigned")
+*/
+        disableConcurrentBuilds()
+        disableResume()
+        durabilityHint('PERFORMANCE_OPTIMIZED')
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        skipDefaultCheckout true
+    }
+    triggers {
+        cron('H H * * *')
+    }
+    agent {label "master || master-infra"}
+    parameters {
+        booleanParam (
+            defaultValue: false,
+            description: 'Print found and skipped items?',
+            name: 'JOBLIST_VERBOSE'
+        )
+        string (
+            defaultValue: '',
+            description: 'Groovy regex for constraining a list of jobs to inspect (if not empty, then only matching job names are scanned)',
+            name: 'JOBLIST_SUBSET')
+        string (
+            defaultValue: '',
+            description: 'Groovy regex for constraining a list of jobs to inspect (if not empty, then matching job names are excluded)',
+            name: 'JOBLIST_EXCLUDE')
+        string (
+            defaultValue: '',
+            description: 'If not empty, look for the regex match in labels you want as offending jobs (e.g. who wants "master" directly?)',
+            name: 'LABEL_REGEX')
+    }
+    stages {
+        stage('Single-exec milestone') {
+            steps {
+                milestone 1
+            } // steps clause
+        }
+    }
+}
+
+// Non-declarative pipeline payload.
+// This code below does not work inside a pipeline{} stage{}
+// clause nor in the post{} clause - not even with the added
+// try/catches for exceptions all around.
+// Curiously, when this pipeline job is built by hand
+// or triggered by timer, it fails with lots of CPS and
+// marshalling exception messages in the end. Replaying
+// the same groovy script with no changes just works.
+try {
+    if ( params.LABEL_REGEX.equals("") ) {
+        echo "DISCOVERING JOBS with no label assigned..."
+    } else {
+        echo "DISCOVERING JOBS with an assigned matching regex: '" + params.LABEL_REGEX + "' ..."
+    }
+    echo "Note: to hide `[Pipeline] echo` from console logs, add this tweak in the browser debug console to the run-time CSS:    .pipeline-new-node { display: none; }"
+    (status, list) = inspectJobs( "${params.JOBLIST_VERBOSE}", "${params.JOBLIST_SUBSET}", "${params.JOBLIST_EXCLUDE}", "${params.LABEL_REGEX}" )
+    if (!status) {
+        if ( params.LABEL_REGEX.equals("") ) {
+            echo "FATAL : Some enabled jobs do not have a label: " + list
+            manager.addShortText("Some enabled jobs do not have a label")
+            currentBuild.result = 'FAILED'
+            manager.buildFailed()
+        } else {
+            echo "FATAL : Some enabled jobs had hit a custom label regex: '" + params.LABEL_REGEX + "' : " + list
+            manager.addShortText("Some enabled jobs did hit a custom label during manual lookup")
+            currentBuild.result = 'UNSTABLE'
+            manager.buildUnstable()
+        }
+    } else {
+        if ( params.LABEL_REGEX.equals("") ) {
+            echo "SUCCESS : Did not find any enabled jobs without a label"
+            manager.addShortText("None of the enabled jobs had no label configured")
+        } else {
+            echo "SUCCESS/WARNING? : Did not find any enabled jobs with a label that matches regex: '" + params.LABEL_REGEX + "'"
+            manager.addShortText("None of the enabled jobs had hit a custom label during manual lookup")
+        }
+    }
+} catch (java.io.NotSerializableException e) {
+    echo "Ignoring NotSerializableException during inspectJobs(), a groovy/JenkinsDSL thing"
+} catch (Exception e) {
+    echo "Failed to find jobs or set up their scans: " + e
+    currentBuild.result = 'ABORTED'
+    manager.buildAborted()
+}
